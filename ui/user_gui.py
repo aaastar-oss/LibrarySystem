@@ -2,137 +2,227 @@ import tkinter as tk
 from tkinter import messagebox
 from services import user_service
 
+# 统一字体和颜色配置，方便全局调整
+FONT_TITLE = ("微软雅黑", 20, "bold")
+FONT_LABEL = ("微软雅黑", 12)
+FONT_BUTTON = ("微软雅黑", 12)
+COLOR_BG = "#ffffff"
+COLOR_BTN_PRIMARY = "#3498db"
+COLOR_BTN_PRIMARY_ACTIVE = "#2980b9"
+COLOR_BTN_SUCCESS = "#27ae60"
+COLOR_BTN_SUCCESS_ACTIVE = "#1e8449"
+COLOR_BTN_DISABLED = "#bdc3c7"
+COLOR_TEXT = "#2c3e50"
+COLOR_FOOTER = "#999999"
 
-class UserGUI:
-    def __init__(self, master):
-        self.master = master
-        master.title("图书管理系统 - 用户")
-        master.geometry("400x550")
-        master.configure(bg="#f0f0f0")
+class UserGUI(tk.Tk):
+    def __init__(self, start_page="MenuPage"):
+        super().__init__()
+        self.title("图书管理系统 - 用户")
+        self.geometry("400x550")
+        self.configure(bg=COLOR_BG)
 
-        title_label = tk.Label(master, text="用户菜单", font=("Helvetica", 24, "bold"), bg="#f0f0f0")
-        title_label.pack(pady=(40, 30))
+        self.frames = {}
+        for F in (MenuPage, BorrowPage, ReturnPage, AvailablePage, MyBooksPage):
+            page_name = F.__name__
+            frame = F(parent=self, controller=self)
+            self.frames[page_name] = frame
+            frame.place(relwidth=1, relheight=1)
+
+        footer = tk.Label(self, text="© 2025 图书管理系统", font=("微软雅黑", 10), bg=COLOR_BG, fg=COLOR_FOOTER)
+        footer.place(relx=0.5, rely=1.0, anchor="s", y=-5)
+
+        self.show_frame(start_page)
+
+    def show_frame(self, page_name):
+        print(f"[DEBUG] 显示页面: {page_name}")
+        frame = self.frames.get(page_name)
+        if frame:
+            frame.tkraise()
+        else:
+            print(f"[ERROR] 未找到页面: {page_name}")
+
+class MenuPage(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent, bg=COLOR_BG)
+        self.controller = controller
+
+        tk.Label(self, text="用户菜单", font=FONT_TITLE, bg=COLOR_BG, fg=COLOR_TEXT).pack(pady=(40, 30))
+
+        btn_config = {
+            "width": 25, "height": 2, "font": FONT_BUTTON,
+            "bg": COLOR_BTN_PRIMARY, "fg": "white", "activebackground": COLOR_BTN_PRIMARY_ACTIVE,
+            "activeforeground": "white", "relief": "flat", "bd": 0
+        }
 
         buttons = [
-            ("借阅图书", self.borrow_book),
-            ("归还图书", self.return_book),
-            ("查询可借图书", self.query_available_books),
-            ("查询我的借阅信息", self.query_my_books),
-            ("退出", master.quit)
+            ("借阅图书", lambda: controller.show_frame("BorrowPage")),
+            ("归还图书", lambda: controller.show_frame("ReturnPage")),
+            ("查询可借图书", lambda: controller.show_frame("AvailablePage")),
+            ("查询我的借阅信息", lambda: controller.show_frame("MyBooksPage")),
+            ("退出", controller.quit)
         ]
 
-        for label, command in buttons:
-            btn = tk.Button(master, text=label, command=command,
-                            width=30, height=2,
-                            font=("Helvetica", 14),
-                            bg="#4a90e2", fg="white",
-                            activebackground="#357ABD", activeforeground="white",
-                            relief="raised", bd=3)
-            btn.pack(pady=10, padx=50)
+        for label, cmd in buttons:
+            tk.Button(self, text=label, command=cmd, **btn_config).pack(pady=10)
 
-    def borrow_book(self):
-        window = tk.Toplevel(self.master)
-        window.title("借阅图书")
-        window.geometry("300x200")
+class UserBookInputFrame(tk.Frame):
+    """
+    通用借书/还书输入框框架
+    """
+    def __init__(self, parent, controller, action_text, action_command):
+        super().__init__(parent, bg=COLOR_BG)
+        self.controller = controller
 
-        tk.Label(window, text="用户名：").pack(pady=5)
-        username_entry = tk.Entry(window, width=25)
-        username_entry.pack()
+        tk.Label(self, text=action_text, font=FONT_TITLE, bg=COLOR_BG, fg=COLOR_TEXT).pack(pady=15)
 
-        tk.Label(window, text="图书编号：").pack(pady=5)
-        book_id_entry = tk.Entry(window, width=25)
-        book_id_entry.pack()
+        tk.Label(self, text="用户名：", font=FONT_LABEL, bg=COLOR_BG).pack(pady=5)
+        self.username_entry = tk.Entry(self, width=25, font=FONT_LABEL)
+        self.username_entry.pack()
 
-        def do_borrow():
-            username = username_entry.get().strip()
-            book_id = book_id_entry.get().strip()
-            if username and book_id:
-                try:
-                    success = user_service.borrow_book(username, book_id)
-                    if success:
-                        messagebox.showinfo("成功", "借书成功")
-                        window.destroy()
-                    else:
-                        messagebox.showerror("失败", "借书失败，可能是图书已借出或借阅超限")
-                except Exception as e:
-                    messagebox.showerror("错误", f"借书出错：{e}")
+        tk.Label(self, text="图书编号：", font=FONT_LABEL, bg=COLOR_BG).pack(pady=5)
+        self.book_id_entry = tk.Entry(self, width=25, font=FONT_LABEL)
+        self.book_id_entry.pack()
+
+        tk.Button(self, text=action_text, command=action_command,
+                  font=FONT_BUTTON, bg=COLOR_BTN_PRIMARY, fg="white",
+                  activebackground=COLOR_BTN_PRIMARY_ACTIVE, relief="flat", bd=0, width=15).pack(pady=15)
+
+        tk.Button(self, text="返回菜单", command=lambda: controller.show_frame("MenuPage"),
+                  font=("微软雅黑", 10), bg=COLOR_BTN_DISABLED, fg="black", relief="flat").pack(pady=5)
+
+class BorrowPage(UserBookInputFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent, controller, "确认借阅", self.do_borrow)
+
+    def do_borrow(self):
+        username = self.username_entry.get().strip()
+        book_id = self.book_id_entry.get().strip()
+
+        if not username:
+            messagebox.showwarning("输入错误", "用户名不能为空")
+            return
+        if not book_id:
+            messagebox.showwarning("输入错误", "图书编号不能为空")
+            return
+        if not book_id.isdigit():
+            messagebox.showwarning("输入错误", "图书编号必须是数字")
+            return
+
+        try:
+            success = user_service.borrow_book(username, book_id)
+            if success:
+                messagebox.showinfo("成功", "借书成功")
+                # 清空输入
+                self.username_entry.delete(0, tk.END)
+                self.book_id_entry.delete(0, tk.END)
             else:
-                messagebox.showwarning("输入错误", "请填写完整信息")
+                messagebox.showerror("失败", "借书失败，可能已借出或超限")
+        except Exception as e:
+            messagebox.showerror("错误", f"出错：{e}")
 
-        tk.Button(window, text="借阅", command=do_borrow).pack(pady=10)
+class ReturnPage(UserBookInputFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent, controller, "确认归还", self.do_return)
 
-    def return_book(self):
-        window = tk.Toplevel(self.master)
-        window.title("归还图书")
-        window.geometry("300x200")
+    def do_return(self):
+        username = self.username_entry.get().strip()
+        book_id = self.book_id_entry.get().strip()
 
-        tk.Label(window, text="用户名：").pack(pady=5)
-        username_entry = tk.Entry(window, width=25)
-        username_entry.pack()
+        if not username:
+            messagebox.showwarning("输入错误", "用户名不能为空")
+            return
+        if not book_id:
+            messagebox.showwarning("输入错误", "图书编号不能为空")
+            return
+        if not book_id.isdigit():
+            messagebox.showwarning("输入错误", "图书编号必须是数字")
+            return
 
-        tk.Label(window, text="图书编号：").pack(pady=5)
-        book_id_entry = tk.Entry(window, width=25)
-        book_id_entry.pack()
-
-        def do_return():
-            username = username_entry.get().strip()
-            book_id = book_id_entry.get().strip()
-            if username and book_id:
-                try:
-                    success = user_service.return_book(username, book_id)
-                    if success:
-                        messagebox.showinfo("成功", "还书成功")
-                        window.destroy()
-                    else:
-                        messagebox.showerror("失败", "还书失败，可能未借该书")
-                except Exception as e:
-                    messagebox.showerror("错误", f"还书出错：{e}")
+        try:
+            success = user_service.return_book(username, book_id)
+            if success:
+                messagebox.showinfo("成功", "还书成功")
+                # 清空输入
+                self.username_entry.delete(0, tk.END)
+                self.book_id_entry.delete(0, tk.END)
             else:
-                messagebox.showwarning("输入错误", "请填写完整信息")
+                messagebox.showerror("失败", "还书失败，可能未借该书")
+        except Exception as e:
+            messagebox.showerror("错误", f"出错：{e}")
 
-        tk.Button(window, text="归还", command=do_return).pack(pady=10)
+class AvailablePage(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent, bg=COLOR_BG)
+        self.controller = controller
 
-    def query_available_books(self):
-        books = user_service.query_books()
-        window = tk.Toplevel(self.master)
-        window.title("可借图书")
-        window.geometry("600x400")
+        tk.Label(self, text="可借图书", font=FONT_TITLE, bg=COLOR_BG, fg=COLOR_TEXT).pack(pady=10)
 
-        text = tk.Text(window, wrap='none')
-        text.pack(fill='both', expand=True)
+        frame_text = tk.Frame(self)
+        frame_text.pack(fill='both', expand=True, padx=10, pady=10)
 
-        if books:
-            for b in books:
-                text.insert(tk.END, f"编号:{b[0]} 书名:{b[1]} 作者:{b[2]} 剩余副本:{b[3]}\n")
-        else:
-            text.insert(tk.END, "暂无可借图书")
+        self.text = tk.Text(frame_text, wrap='none', font=("微软雅黑", 11))
+        self.text.pack(side=tk.LEFT, fill='both', expand=True)
+
+        scrollbar = tk.Scrollbar(frame_text, command=self.text.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.text.config(yscrollcommand=scrollbar.set)
+
+        tk.Button(self, text="刷新列表", command=self.load_books,
+                  font=FONT_BUTTON, bg=COLOR_BTN_SUCCESS, fg="white",
+                  activebackground=COLOR_BTN_SUCCESS_ACTIVE, relief="flat", bd=0, width=15).pack(pady=5)
+
+        tk.Button(self, text="返回菜单", command=lambda: controller.show_frame("MenuPage"),
+                  font=("微软雅黑", 10), bg=COLOR_BTN_DISABLED, fg="black", relief="flat").pack(pady=5)
+
+        self.load_books()
+
+    def load_books(self):
+        self.text.delete("1.0", tk.END)
+        try:
+            books = user_service.query_books()
+            if books:
+                for b in books:
+                    self.text.insert(tk.END, f"编号:{b[0]}  书名:{b[1]}  作者:{b[2]}  剩余副本:{b[3]}\n")
+            else:
+                self.text.insert(tk.END, "暂无可借图书\n")
+        except Exception as e:
+            messagebox.showerror("错误", f"查询图书时出错：{e}")
+
+class MyBooksPage(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent, bg=COLOR_BG)
+        self.controller = controller
+
+        tk.Label(self, text="我的借阅信息", font=FONT_TITLE, bg=COLOR_BG, fg=COLOR_TEXT).pack(pady=15)
+
+        tk.Label(self, text="用户名：", font=FONT_LABEL, bg=COLOR_BG).pack(pady=5)
+        self.entry = tk.Entry(self, width=30, font=FONT_LABEL)
+        self.entry.pack(pady=5)
+
+        tk.Button(self, text="查询我的借阅", command=self.query_my_books,
+                  font=FONT_BUTTON, bg=COLOR_BTN_PRIMARY, fg="white",
+                  activebackground=COLOR_BTN_PRIMARY_ACTIVE, relief="flat", bd=0, width=18).pack(pady=10)
+
+        tk.Button(self, text="返回菜单", command=lambda: controller.show_frame("MenuPage"),
+                  font=("微软雅黑", 10), bg=COLOR_BTN_DISABLED, fg="black", relief="flat").pack(pady=5)
 
     def query_my_books(self):
-        window = tk.Toplevel(self.master)
-        window.title("我的借阅信息")
-        window.geometry("350x200")
+        username = self.entry.get().strip()
+        if not username:
+            messagebox.showwarning("输入错误", "请输入用户名")
+            return
 
-        tk.Label(window, text="请输入用户名：").pack(pady=10)
-        entry = tk.Entry(window, width=30)
-        entry.pack()
-
-        def do_query():
-            username = entry.get().strip()
-            if username:
-                books = user_service.get_user_borrowed(username)
-                if books:
-                    info = "\n".join([f"编号: {b[0]}, 书名: {b[1]}, 到期: {b[2]}" for b in books])
-                    messagebox.showinfo("借阅信息", info)
-                else:
-                    messagebox.showinfo("借阅信息", "暂无借阅记录")
+        try:
+            books = user_service.get_user_borrowed(username)
+            if books:
+                info = "\n".join([f"编号: {b[0]}, 书名: {b[1]}, 到期: {b[2]}" for b in books])
+                messagebox.showinfo("借阅信息", info)
             else:
-                messagebox.showwarning("输入错误", "请输入用户名")
+                messagebox.showinfo("借阅信息", "暂无借阅记录")
+        except Exception as e:
+            messagebox.showerror("错误", f"查询借阅信息时出错：{e}")
 
-        tk.Button(window, text="查询", command=do_query).pack(pady=10)
-
-
-# 单独运行界面
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = UserGUI(root)
-    root.mainloop()
+    app = UserGUI()
+    app.mainloop()
