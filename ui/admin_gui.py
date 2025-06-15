@@ -1,22 +1,24 @@
 import tkinter as tk
 from tkinter import ttk
-from services import admin_service
+from services import admin_service, user_service
 from ui.pages import (
     AddBookPage,
     DeleteBookPage,
     ModifyBookPage,
     QueryBookPage,
     QueryUserPage,
-    OverviewBooksPage
+    OverviewBooksPage,
+    MenuPage  # 导入用户中心的MenuPage
 )
 
 class AdminGUI(tk.Tk):
-    def __init__(self):
+    def __init__(self, username="admin"):
         super().__init__()
         self.title("图书管理系统 - 管理员")
         self.geometry("1200x800")
+        self._username = username  # 存储管理员用户名
         
-        # UI配置变量（改为实例属性）
+        # UI配置变量
         self.BG_COLOR = "#f5f7fa"
         self.SIDEBAR_BG = "#2c3e50"
         self.SIDEBAR_HEADER_BG = "#34495e"
@@ -31,14 +33,6 @@ class AdminGUI(tk.Tk):
         self.FONT_TITLE = ("微软雅黑", 16, "bold")
         self.FONT_LABEL = ("微软雅黑", 11)
         self.FONT_BUTTON = ("微软雅黑", 11)
-        self.BTN_BG = self.PRIMARY_COLOR
-        self.BTN_FG = "white"
-        self.BTN_ACTIVE_BG = "#2e59d9"
-        self.BTN_ACTIVE_FG = "white"
-        self.STATUS_FG_ERROR = self.DANGER_COLOR
-        self.STATUS_FG_SUCCESS = self.SUCCESS_COLOR
-        self.ENTRY_BG = "#ffffff"
-        self.BORDER_COLOR = "#d1d3e2"
         
         self.configure(bg=self.BG_COLOR)
         
@@ -67,6 +61,11 @@ class AdminGUI(tk.Tk):
         # 默认显示首页
         self.show_frame("OverviewBooksPage")
 
+    @property
+    def username(self):
+        """获取当前管理员用户名"""
+        return self._username
+
     def _create_status_bar(self):
         """创建底部状态栏"""
         status_frame = tk.Frame(self, bg="#e0e6ed", height=30)
@@ -91,36 +90,20 @@ class AdminGUI(tk.Tk):
 
     def _init_all_pages(self):
         """初始化所有功能页面"""
-        print("正在初始化所有页面...")  # 调试信息
-        
-        # 图书总览页
+        # 图书管理相关页面
         self.frames["OverviewBooksPage"] = OverviewBooksPage(self.content, self)
-        print("OverviewBooksPage 初始化完成")
-        
-        # 添加图书页
         self.frames["AddBookPage"] = AddBookPage(self.content, self)
-        print("AddBookPage 初始化完成")
-        
-        # 删除图书页
         self.frames["DeleteBookPage"] = DeleteBookPage(self.content, self)
-        print("DeleteBookPage 初始化完成")
-        
-        # 修改图书页
         self.frames["ModifyBookPage"] = ModifyBookPage(self.content, self)
-        print("ModifyBookPage 初始化完成")
-        
-        # 查询图书页
         self.frames["QueryBookPage"] = QueryBookPage(self.content, self)
-        print("QueryBookPage 初始化完成")
-        
-        # 用户查询页
         self.frames["QueryUserPage"] = QueryUserPage(self.content, self)
-        print("QueryUserPage 初始化完成")
+        
+        # 添加用户中心页面 (复用MenuPage)
+        self.frames["UserCenterPage"] = MenuPage(self.content, self)
         
         # 初始隐藏所有页面
-        for name, page in self.frames.items():
+        for page in self.frames.values():
             page.pack_forget()
-            print(f"已隐藏页面: {name}")
 
     def _create_sidebar(self):
         """创建左侧导航栏"""
@@ -149,7 +132,8 @@ class AdminGUI(tk.Tk):
             {"header": "查询系统", "items": [
                 ("查询图书", "QueryBookPage"),
                 ("用户查询", "QueryUserPage")
-            ]}
+            ]},
+            {"header": "用户中心", "items": [("个人信息", "UserCenterPage")]}  # 新增用户中心
         ]
         
         for section in menu_items:
@@ -164,54 +148,73 @@ class AdminGUI(tk.Tk):
                 anchor="w"
             ).pack(fill="x", padx=10)
             
-            # 菜单项
+            # 创建菜单项
             for text, page_name in section["items"]:
-                btn = tk.Label(
-                    sidebar,
-                    text=text,
-                    font=self.FONT_LABEL,
-                    bg=self.ACTIVE_BG if text == self.current_active_menu else self.SIDEBAR_BG,
-                    fg="white",
-                    padx=20,
-                    pady=10,
-                    anchor="w",
-                    cursor="hand2"
-                )
-                btn.pack(fill="x")
-                self.menu_buttons[text] = btn
-                
-                # 绑定点击事件
-                btn.bind("<Button-1>", lambda e, p=page_name: self.show_frame(p))
-                
-                # 悬停效果
-                if text != self.current_active_menu:
-                    btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#34495e"))
-                    btn.bind("<Leave>", lambda e, b=btn: b.config(bg=self.SIDEBAR_BG))
+                self._create_menu_button(sidebar, text, page_name)
         
-        # 用户信息
+        # 用户信息显示
+        self._create_user_info_display(sidebar)
+
+    def _create_menu_button(self, parent, text, page_name):
+        """创建单个菜单按钮"""
+        btn = tk.Label(
+            parent,
+            text=text,
+            font=self.FONT_LABEL,
+            bg=self.ACTIVE_BG if text == self.current_active_menu else self.SIDEBAR_BG,
+            fg="white",
+            padx=20,
+            pady=10,
+            anchor="w",
+            cursor="hand2"
+        )
+        btn.pack(fill="x")
+        self.menu_buttons[text] = btn
+        
+        # 绑定事件
+        btn.bind("<Button-1>", lambda e, p=page_name: self.show_frame(p))
+        
+        if text != self.current_active_menu:
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#34495e"))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(bg=self.SIDEBAR_BG))
+
+    def _create_user_info_display(self, parent):
+        """创建用户信息显示区域"""
+        user_frame = tk.Frame(parent, bg=self.SIDEBAR_HEADER_BG)
+        user_frame.pack(side="bottom", fill="x", pady=10)
+        
         tk.Label(
-            sidebar,
-            text="当前用户：管理员",
+            user_frame,
+            text=f"当前用户：{self.username} (管理员)",
             font=("微软雅黑", 10),
             bg=self.SIDEBAR_HEADER_BG,
             fg="white",
             pady=15
-        ).pack(side="bottom", fill="x")
+        ).pack(fill="x")
+        
+        # 添加退出按钮
+        tk.Button(
+            parent,
+            text="退出登录",
+            command=self.logout,
+            font=self.FONT_BUTTON,
+            bg=self.DANGER_COLOR,
+            fg="white",
+            activebackground="#c0392b",
+            relief="flat",
+            padx=20,
+            pady=5
+        ).pack(side="bottom", fill="x", padx=10, pady=10)
 
     def show_frame(self, page_name):
         """显示指定页面"""
-        print(f"尝试显示页面: {page_name}")  # 调试信息
-        
         if page_name not in self.frames:
-            error_msg = f"错误：页面 {page_name} 不存在"
-            print(error_msg)
-            self.set_status(error_msg, self.DANGER_COLOR)
+            self.set_status(f"错误：页面 {page_name} 不存在", self.DANGER_COLOR)
             return
         
         # 隐藏所有页面
-        for name, frame in self.frames.items():
-            frame.pack_forget()
-            print(f"已隐藏页面: {name}")
+        for page in self.frames.values():
+            page.pack_forget()
         
         # 更新菜单高亮
         self._update_menu_highlight(page_name)
@@ -219,53 +222,55 @@ class AdminGUI(tk.Tk):
         # 显示目标页面
         frame = self.frames[page_name]
         if hasattr(frame, "update_data"):
-            print(f"调用 {page_name} 的 update_data()")
             frame.update_data()
         
-        print(f"显示页面: {page_name}")
         frame.pack(fill="both", expand=True)
-        self.update()  # 强制更新界面
+        self.update()
 
     def _update_menu_highlight(self, page_name):
         """更新菜单高亮状态"""
-        page_to_text = {
+        page_mapping = {
             "OverviewBooksPage": "图书总览",
             "AddBookPage": "录入图书",
-            "ModifyBookPage": "修改图书", 
+            "ModifyBookPage": "修改图书",
             "DeleteBookPage": "删除图书",
             "QueryBookPage": "查询图书",
-            "QueryUserPage": "用户查询"
+            "QueryUserPage": "用户查询",
+            "UserCenterPage": "个人信息"
         }
         
-        if page_name not in page_to_text:
+        if page_name not in page_mapping:
             return
         
-        new_active = page_to_text[page_name]
+        new_active = page_mapping[page_name]
         
         # 清除旧高亮
-        if self.current_active_menu:
+        if self.current_active_menu in self.menu_buttons:
             old_btn = self.menu_buttons[self.current_active_menu]
             old_btn.config(bg=self.SIDEBAR_BG)
             old_btn.bind("<Enter>", lambda e, b=old_btn: b.config(bg="#34495e"))
             old_btn.bind("<Leave>", lambda e, b=old_btn: b.config(bg=self.SIDEBAR_BG))
         
         # 设置新高亮
-        new_btn = self.menu_buttons[new_active]
-        new_btn.config(bg=self.ACTIVE_BG)
-        new_btn.unbind("<Enter>")
-        new_btn.unbind("<Leave>")
-        
-        self.current_active_menu = new_active
-        print(f"更新菜单高亮: {new_active}")
+        if new_active in self.menu_buttons:
+            new_btn = self.menu_buttons[new_active]
+            new_btn.config(bg=self.ACTIVE_BG)
+            new_btn.unbind("<Enter>")
+            new_btn.unbind("<Leave>")
+            self.current_active_menu = new_active
 
     def set_status(self, message, color=None):
         """设置状态栏消息"""
         color = color or self.DANGER_COLOR
         if hasattr(self, 'status_label'):
             self.status_label.config(text=message, fg=color)
-            print(f"状态栏更新: {message}")
+
+    def logout(self):
+        """退出登录"""
+        self.destroy()
+        from main import main  # 导入主页面
+        main()  # 返回登录页面
 
 if __name__ == "__main__":
-    print("启动管理员界面...")
-    app = AdminGUI()
+    app = AdminGUI(username="admin")  # 测试时可指定管理员用户名
     app.mainloop()

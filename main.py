@@ -244,9 +244,9 @@ class AuthGUI:
             
             self.root.destroy()
             if user['role'] == 'admin':
-                app = AdminGUI()
+                app = AdminGUI(username=username)  # 修改处：传递用户名给AdminGUI
             else:
-                app = UserGUI(username=username)  # 传递用户名到用户界面
+                app = UserGUI(username=username)
             app.mainloop()
             
         except Exception as e:

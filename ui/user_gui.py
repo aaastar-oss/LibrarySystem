@@ -17,6 +17,11 @@ class UserGUI(tk.Tk):
         self.title("图书管理系统 - 用户")
         self.geometry("1200x800")
         
+        # 用户名验证
+        if username is None:
+            raise ValueError("用户名不能为None")
+        self._username = username  # 使用保护属性存储
+
         # UI配置变量
         self.BG_COLOR = "#f5f7fa"
         self.SIDEBAR_BG = "#2c3e50"
@@ -40,7 +45,6 @@ class UserGUI(tk.Tk):
         self.BORDER_COLOR = "#d1d3e2"
         
         self.configure(bg=self.BG_COLOR)
-        self.username = username
         
         # 主容器
         self.container = tk.Frame(self, bg=self.BG_COLOR)
@@ -57,16 +61,31 @@ class UserGUI(tk.Tk):
         self._init_all_pages()
         
         # 创建侧边栏
-        self.sidebar = None
         self._create_sidebar()
 
-        # 显示登录窗口（如果未提供用户名）
-        if not self.username:
-            print("[初始化] 未提供用户名，显示登录窗口")
-            self.show_login()
-        else:
-            print(f"[初始化] 使用提供的用户名: {self.username}")
-            self.show_frame("MenuPage")
+        # 直接显示主菜单
+        self.show_frame("MenuPage")
+
+    @property
+    def username(self):
+        """获取用户名"""
+        return self._username
+
+    @username.setter 
+    def username(self, value):
+        """设置用户名"""
+        if not value:
+            raise ValueError("用户名不能为空")
+        self._username = value
+        self._update_user_display()
+        
+    def _update_user_display(self):
+        """更新用户信息显示"""
+        if hasattr(self, 'user_info_label'):
+            self.user_info_label.config(text=f"当前用户：{self.username}")
+        # 刷新菜单页数据
+        if "MenuPage" in self.frames:
+            self.frames["MenuPage"].update_data()
 
     def _create_status_bar(self):
         """创建底部状态栏"""
@@ -92,7 +111,6 @@ class UserGUI(tk.Tk):
 
     def _init_all_pages(self):
         """初始化所有功能页面"""
-        print("[初始化] 开始初始化所有页面")
         self.frames = {}
         
         # 用户菜单页
@@ -116,13 +134,10 @@ class UserGUI(tk.Tk):
         # 初始隐藏所有页面
         for name, page in self.frames.items():
             page.pack_forget()
-        
-        print("[初始化] 所有页面初始化完成")
 
     def _create_sidebar(self):
         """创建左侧导航栏"""
-        print("[界面] 创建侧边栏")
-        if self.sidebar:
+        if hasattr(self, 'sidebar') and self.sidebar:
             self.sidebar.destroy()
             
         self.sidebar = tk.Frame(self.container, bg=self.SIDEBAR_BG, width=250)
@@ -141,7 +156,7 @@ class UserGUI(tk.Tk):
         
         # 菜单项配置
         menu_items = [
-            {"header": "用户中心", "items": [("主菜单", "MenuPage")]},
+            {"header": "用户中心", "items": [("个人中心", "MenuPage")]},
             {"header": "图书操作", "items": [
                 ("借阅图书", "BorrowPage"), 
                 ("归还图书", "ReturnPage"),
@@ -171,7 +186,7 @@ class UserGUI(tk.Tk):
                     self.sidebar,
                     text=text,
                     font=self.FONT_LABEL,
-                    bg=self.ACTIVE_BG if text == "主菜单" else self.SIDEBAR_BG,
+                    bg=self.ACTIVE_BG if page_name == "MenuPage" else self.SIDEBAR_BG,
                     fg="white",
                     padx=20,
                     pady=10,
@@ -184,7 +199,7 @@ class UserGUI(tk.Tk):
                 btn.bind("<Button-1>", lambda e, p=page_name: self.show_frame(p))
                 
                 # 悬停效果
-                if text != "主菜单":
+                if page_name != "MenuPage":
                     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#34495e"))
                     btn.bind("<Leave>", lambda e, b=btn: b.config(bg=self.SIDEBAR_BG))
         
@@ -195,7 +210,7 @@ class UserGUI(tk.Tk):
         # 用户信息标签
         self.user_info_label = tk.Label(
             self.user_info_frame,
-            text=f"当前用户：{self.username if self.username else '未登录'}",
+            text=f"当前用户：{self.username}",
             font=("微软雅黑", 10),
             bg=self.SIDEBAR_HEADER_BG,
             fg="white",
@@ -203,11 +218,11 @@ class UserGUI(tk.Tk):
         )
         self.user_info_label.pack(fill="x")
         
-        # 登出按钮
+        # 返回主页按钮
         tk.Button(
             self.sidebar,
-            text="退出登录",
-            command=self.logout,
+            text="返回主页",
+            command=self.return_to_main,
             font=self.FONT_BUTTON,
             bg=self.DANGER_COLOR,
             fg="white",
@@ -218,11 +233,9 @@ class UserGUI(tk.Tk):
         ).pack(side="bottom", fill="x", padx=10, pady=10)
 
     def show_frame(self, page_name):
-        """显示指定页面 - 修改版本"""
-        print(f"[导航] 显示页面: {page_name}")
+        """显示指定页面"""
         if page_name not in self.frames:
             error_msg = f"错误：页面 {page_name} 不存在"
-            print(f"[错误] {error_msg}")
             self.set_status(error_msg, self.DANGER_COLOR)
             return
         
@@ -233,141 +246,34 @@ class UserGUI(tk.Tk):
         # 显示目标页面
         frame = self.frames[page_name]
         
-        # 强制刷新MenuPage数据
-        if page_name == "MenuPage" and hasattr(frame, 'update_data'):
-            print("[导航] 强制刷新MenuPage数据")
-            frame.update_data()
+        # 如果页面有update_data方法，则调用它
+        if hasattr(frame, 'update_data'):
+            try:
+                frame.update_data()
+            except Exception as e:
+                error_msg = f"刷新页面数据出错: {str(e)}"
+                print(f"[ERROR] {error_msg}\n{traceback.format_exc()}")
+                self.set_status(error_msg, self.DANGER_COLOR)
         
         frame.pack(fill="both", expand=True)
         self.update()
 
-    def show_login(self):
-        """显示登录窗口"""
-        print("[登录] 显示登录窗口")
-        login = tk.Toplevel(self)
-        login.title("用户登录")
-        login.geometry("400x250")
-        login.configure(bg=self.BG_COLOR)
-        login.resizable(False, False)
-        
-        # 使登录窗口居中
-        window_width = 400
-        window_height = 250
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        x = (screen_width - window_width) // 2
-        y = (screen_height - window_height) // 2
-        login.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        
-        # 登录表单容器
-        form_frame = tk.Frame(login, bg=self.BG_COLOR)
-        form_frame.pack(pady=30)
-        
-        # 标题
-        tk.Label(
-            form_frame,
-            text="用户登录",
-            font=self.FONT_TITLE,
-            bg=self.BG_COLOR,
-            fg=self.TEXT_DARK
-        ).grid(row=0, column=0, columnspan=2, pady=(0, 20))
-        
-        # 用户名标签
-        tk.Label(
-            form_frame,
-            text="用户名：",
-            font=self.FONT_LABEL,
-            bg=self.BG_COLOR,
-            fg=self.TEXT_DARK
-        ).grid(row=1, column=0, padx=5, pady=5, sticky="e")
-        
-        # 用户名输入框
-        username_entry = tk.Entry(
-            form_frame,
-            font=self.FONT_LABEL,
-            bg=self.ENTRY_BG,
-            relief="flat",
-            highlightthickness=1,
-            highlightbackground=self.BORDER_COLOR,
-            highlightcolor=self.PRIMARY_COLOR
-        )
-        username_entry.grid(row=1, column=1, padx=5, pady=5, ipady=5)
-        
-        # 登录按钮
-        login_btn = tk.Button(
-            form_frame,
-            text="登录",
-            command=lambda: self._handle_login(login, username_entry),
-            font=self.FONT_BUTTON,
-            bg=self.PRIMARY_COLOR,
-            fg="white",
-            activebackground=self.BTN_ACTIVE_BG,
-            activeforeground=self.BTN_ACTIVE_FG,
-            relief="flat",
-            padx=20,
-            pady=5
-        )
-        login_btn.grid(row=2, column=0, columnspan=2, pady=20)
-        
-        # 绑定回车键
-        username_entry.bind("<Return>", lambda e: self._handle_login(login, username_entry))
-        
-        # 聚焦输入框
-        username_entry.focus_set()
-
-    def _handle_login(self, login_window, entry):
-        """处理登录逻辑"""
-        username = entry.get().strip()
-        if not username:
-            messagebox.showwarning("输入错误", "用户名不能为空", parent=login_window)
-            return
-        
-        # 添加调试打印
-        print(f"[登录] 输入的用户名: {username}")
-        print(f"[登录] 设置前的self.username: {getattr(self, 'username', '未设置')}")
-        
-        # 这里可以添加实际的用户验证逻辑
-        self.username = username
-        login_window.destroy()
-        
-        # 添加更多调试信息
-        print(f"[登录] 设置后的self.username: {self.username}")
-        print(f"[登录] 控制器属性检查: {hasattr(self, 'username')}")
-        
-        # 更新侧边栏用户信息
-        self._update_user_display()
-        
-        # 显示菜单页前打印状态
-        print(f"[登录] 跳转到MenuPage前的状态 - username: {self.username}")
-        self.show_frame("MenuPage")
-        
-        # 添加额外调试信息
-        if hasattr(self, 'frames') and "MenuPage" in self.frames:
-            print("[登录] MenuPage实例已存在")
-        else:
-            print("[登录] 警告: MenuPage未初始化")
-
-    def _update_user_display(self):
-        """更新用户信息显示"""
-        print(f"[更新] 更新用户显示，当前用户: {self.username if self.username else '未登录'}")
-        if hasattr(self, 'user_info_label'):
-            self.user_info_label.config(text=f"当前用户：{self.username if self.username else '未登录'}")
-
-    def logout(self):
-        """退出登录"""
-        print("[登出] 用户退出登录")
-        self.username = None
-        self._update_user_display()
-        self.show_login()
+    def return_to_main(self):
+        """返回主页面"""
+        self.destroy()
+        from main import main  # 导入主页面函数
+        main()  # 重新启动主页面
 
     def set_status(self, message, color=None):
         """设置状态栏消息"""
         color = color or self.DANGER_COLOR
         if hasattr(self, 'status_label'):
-            print(f"[状态] 设置状态消息: {message}")
             self.status_label.config(text=message, fg=color)
 
 if __name__ == "__main__":
-    print("[系统] 启动图书管理系统")
-    app = UserGUI()
-    app.mainloop()
+    # 测试代码 - 实际使用时应该从主页面传入真实用户名
+    try:
+        app = UserGUI(username="测试用户")
+        app.mainloop()
+    except ValueError as e:
+        messagebox.showerror("初始化错误", str(e))
