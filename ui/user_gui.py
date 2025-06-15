@@ -9,6 +9,7 @@ from ui.pages import (
     MyBooksPage,
     SearchBookPage
 )
+import traceback
 
 class UserGUI(tk.Tk):
     def __init__(self, username=None):
@@ -56,12 +57,15 @@ class UserGUI(tk.Tk):
         self._init_all_pages()
         
         # 创建侧边栏
+        self.sidebar = None
         self._create_sidebar()
 
         # 显示登录窗口（如果未提供用户名）
         if not self.username:
+            print("[初始化] 未提供用户名，显示登录窗口")
             self.show_login()
         else:
+            print(f"[初始化] 使用提供的用户名: {self.username}")
             self.show_frame("MenuPage")
 
     def _create_status_bar(self):
@@ -88,6 +92,7 @@ class UserGUI(tk.Tk):
 
     def _init_all_pages(self):
         """初始化所有功能页面"""
+        print("[初始化] 开始初始化所有页面")
         self.frames = {}
         
         # 用户菜单页
@@ -111,15 +116,21 @@ class UserGUI(tk.Tk):
         # 初始隐藏所有页面
         for name, page in self.frames.items():
             page.pack_forget()
+        
+        print("[初始化] 所有页面初始化完成")
 
     def _create_sidebar(self):
         """创建左侧导航栏"""
-        sidebar = tk.Frame(self.container, bg=self.SIDEBAR_BG, width=250)
-        sidebar.pack(side="left", fill="y")
+        print("[界面] 创建侧边栏")
+        if self.sidebar:
+            self.sidebar.destroy()
+            
+        self.sidebar = tk.Frame(self.container, bg=self.SIDEBAR_BG, width=250)
+        self.sidebar.pack(side="left", fill="y")
         
         # 系统标题
         tk.Label(
-            sidebar,
+            self.sidebar,
             text="图书管理系统",
             font=self.FONT_TITLE,
             bg=self.SIDEBAR_BG,
@@ -145,7 +156,7 @@ class UserGUI(tk.Tk):
         for section in menu_items:
             # 分类标题
             tk.Label(
-                sidebar,
+                self.sidebar,
                 text=section["header"],
                 font=("微软雅黑", 12),
                 bg=self.SIDEBAR_HEADER_BG,
@@ -157,7 +168,7 @@ class UserGUI(tk.Tk):
             # 菜单项
             for text, page_name in section["items"]:
                 btn = tk.Label(
-                    sidebar,
+                    self.sidebar,
                     text=text,
                     font=self.FONT_LABEL,
                     bg=self.ACTIVE_BG if text == "主菜单" else self.SIDEBAR_BG,
@@ -177,20 +188,24 @@ class UserGUI(tk.Tk):
                     btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#34495e"))
                     btn.bind("<Leave>", lambda e, b=btn: b.config(bg=self.SIDEBAR_BG))
         
-        # 用户信息
-        user_info = tk.Label(
-            sidebar,
+        # 用户信息区域
+        self.user_info_frame = tk.Frame(self.sidebar, bg=self.SIDEBAR_HEADER_BG)
+        self.user_info_frame.pack(side="bottom", fill="x", pady=10)
+        
+        # 用户信息标签
+        self.user_info_label = tk.Label(
+            self.user_info_frame,
             text=f"当前用户：{self.username if self.username else '未登录'}",
             font=("微软雅黑", 10),
             bg=self.SIDEBAR_HEADER_BG,
             fg="white",
             pady=15
         )
-        user_info.pack(side="bottom", fill="x")
+        self.user_info_label.pack(fill="x")
         
         # 登出按钮
         tk.Button(
-            sidebar,
+            self.sidebar,
             text="退出登录",
             command=self.logout,
             font=self.FONT_BUTTON,
@@ -203,9 +218,12 @@ class UserGUI(tk.Tk):
         ).pack(side="bottom", fill="x", padx=10, pady=10)
 
     def show_frame(self, page_name):
-        """显示指定页面"""
+        """显示指定页面 - 修改版本"""
+        print(f"[导航] 显示页面: {page_name}")
         if page_name not in self.frames:
-            self.set_status(f"错误：页面 {page_name} 不存在", self.DANGER_COLOR)
+            error_msg = f"错误：页面 {page_name} 不存在"
+            print(f"[错误] {error_msg}")
+            self.set_status(error_msg, self.DANGER_COLOR)
             return
         
         # 隐藏所有页面
@@ -214,7 +232,10 @@ class UserGUI(tk.Tk):
         
         # 显示目标页面
         frame = self.frames[page_name]
-        if hasattr(frame, "update_data"):
+        
+        # 强制刷新MenuPage数据
+        if page_name == "MenuPage" and hasattr(frame, 'update_data'):
+            print("[导航] 强制刷新MenuPage数据")
             frame.update_data()
         
         frame.pack(fill="both", expand=True)
@@ -222,6 +243,7 @@ class UserGUI(tk.Tk):
 
     def show_login(self):
         """显示登录窗口"""
+        print("[登录] 显示登录窗口")
         login = tk.Toplevel(self)
         login.title("用户登录")
         login.geometry("400x250")
@@ -300,29 +322,52 @@ class UserGUI(tk.Tk):
             messagebox.showwarning("输入错误", "用户名不能为空", parent=login_window)
             return
         
+        # 添加调试打印
+        print(f"[登录] 输入的用户名: {username}")
+        print(f"[登录] 设置前的self.username: {getattr(self, 'username', '未设置')}")
+        
         # 这里可以添加实际的用户验证逻辑
         self.username = username
         login_window.destroy()
-        self.show_frame("MenuPage")
+        
+        # 添加更多调试信息
+        print(f"[登录] 设置后的self.username: {self.username}")
+        print(f"[登录] 控制器属性检查: {hasattr(self, 'username')}")
         
         # 更新侧边栏用户信息
-        for widget in self.winfo_children():
-            if isinstance(widget, tk.Frame) and widget.winfo_children():
-                for child in widget.winfo_children():
-                    if "当前用户" in child.cget("text"):
-                        child.config(text=f"当前用户：{self.username}")
+        self._update_user_display()
+        
+        # 显示菜单页前打印状态
+        print(f"[登录] 跳转到MenuPage前的状态 - username: {self.username}")
+        self.show_frame("MenuPage")
+        
+        # 添加额外调试信息
+        if hasattr(self, 'frames') and "MenuPage" in self.frames:
+            print("[登录] MenuPage实例已存在")
+        else:
+            print("[登录] 警告: MenuPage未初始化")
+
+    def _update_user_display(self):
+        """更新用户信息显示"""
+        print(f"[更新] 更新用户显示，当前用户: {self.username if self.username else '未登录'}")
+        if hasattr(self, 'user_info_label'):
+            self.user_info_label.config(text=f"当前用户：{self.username if self.username else '未登录'}")
 
     def logout(self):
         """退出登录"""
+        print("[登出] 用户退出登录")
         self.username = None
+        self._update_user_display()
         self.show_login()
 
     def set_status(self, message, color=None):
         """设置状态栏消息"""
         color = color or self.DANGER_COLOR
         if hasattr(self, 'status_label'):
+            print(f"[状态] 设置状态消息: {message}")
             self.status_label.config(text=message, fg=color)
 
 if __name__ == "__main__":
+    print("[系统] 启动图书管理系统")
     app = UserGUI()
     app.mainloop()

@@ -220,8 +220,7 @@ def get_user_by_username(username):
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
-            SELECT username, role, phone, email, max_borrow, 
-                   DATE_FORMAT(created_at, '%Y-%m-%d %H:%i') as register_time
+            SELECT username, role, phone, email, max_borrow
             FROM users 
             WHERE username = %s
         """, (username,))

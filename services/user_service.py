@@ -80,26 +80,29 @@ def search_book(keyword: str):
         return None
     
 def get_user_info(username):
-    """
-    获取用户详细信息
-    :param username: 用户名
-    :return: 包含用户信息的字典
-    """
+    """获取用户详细信息 - 修正版本"""
+    print(f"[get_user_info] 正在查询用户: {username}")
     try:
-        # 调用数据库接口
+        # 获取用户基本信息
         user_data = database_user.get_user_by_username(username)
-        
         if not user_data:
-            raise ValueError("用户不存在")
+            print("[get_user_info] 用户不存在")
+            return None
+            
+        # 获取借阅数量
+        borrowed_count = database_user.user_borrow_count(username)
         
         return {
             'username': user_data['username'],
             'role': user_data['role'],
-            'phone': user_data.get('phone', ''),
-            'email': user_data.get('email', ''),
+            'phone': user_data.get('phone', '未设置'),
+            'email': user_data.get('email', '未设置'),
             'max_borrow': user_data.get('max_borrow', 5),
-            'current_borrowed': database_user.get_borrowed_count(username),
-            'register_time': user_data.get('register_time', '未知')
+            'current_borrowed': borrowed_count,
+            'register_time': '未知'  # 表中无注册时间字段
         }
+        
     except Exception as e:
+        print(f"[get_user_info] 查询出错: {str(e)}")
+        print(traceback.format_exc())
         raise Exception(f"获取用户信息失败: {str(e)}")
