@@ -1,78 +1,78 @@
-# 图书管理系统
+# config.py 使用说明
 
-基于 Python 和 Tkinter 的图书管理系统，支持管理员和用户两种角色的图书管理与借阅功能。项目结构清晰，采用模块化设计，包含数据库操作、业务逻辑和图形界面，便于维护和扩展。
+本文件用于配置数据库连接参数，供图书管理系统的各模块使用。
+拉取完先在此处配置本地数据库。
 
----
+## 初始化SQL代码
 
-## 一、项目简介
+```sql
+-- 创建数据库
+CREATE DATABASE IF NOT EXISTS library CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-本系统旨在实现一个简洁高效的图书管理平台，满足图书馆或小型图书管理场景的需求。通过图形界面提供友好的交互体验，实现图书信息的录入、管理、借阅和归还等核心功能，支持管理员对图书和用户借阅状态的管理，以及用户的借书还书操作和借阅信息查询。
+USE library;
 
----
+-- 创建图书表
+CREATE TABLE IF NOT EXISTS books (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    author VARCHAR(100) NOT NULL,
+    publisher VARCHAR(100),
+    publish_date DATE,
+    price DECIMAL(8,2),
+    total_copies INT DEFAULT 0,
+    available_copies INT DEFAULT 0,
+    INDEX idx_title (title),
+    INDEX idx_author (author)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-## 二、功能特点
+-- 创建用户表
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin','user') DEFAULT 'user',
+    phone VARCHAR(20),
+    email VARCHAR(100),
+    max_borrow INT DEFAULT 5,
+    INDEX idx_username (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-### 管理员功能
+-- 创建借阅记录表
+CREATE TABLE IF NOT EXISTS borrowrecords (
+    borrow_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    book_id INT NOT NULL,
+    borrow_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    return_date DATE,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (book_id) REFERENCES books(id),
+    INDEX idx_user (user_id),
+    INDEX idx_book (book_id),
+    INDEX idx_due_date (due_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-- **图书管理**  
-  支持录入新书、删除旧书、修改图书信息（如书名、作者、出版社、数量等）。
-- **图书查询**  
-  可按条件查询图书详情和库存状态，支持模糊查询和分页显示。
-- **用户借阅状态管理**  
-  查询所有用户当前的借阅记录和逾期情况，便于管理和催还。
-- **图书信息总览**  
-  展示图书馆整体藏书情况和借阅统计，支持导出报表。
-
-### 用户功能
-
-- **借书与还书管理**  
-  用户可通过界面操作借阅和归还图书，系统自动更新库存和借阅记录。
-- **查询可借阅图书**  
-  查看当前可借图书列表及详细信息，方便用户选择。
-- **查询个人借阅状态**  
-  用户可以查询自己当前借阅的图书及还书期限，便于及时归还。
-
----
-
-## 三、技术栈
-
-- Python 3.x  
-- Tkinter（图形用户界面库）  
-- SQLite（嵌入式关系型数据库）  
-- 模块化设计，分层实现：  
-  - `db/`：数据库连接与操作  
-  - `models/`：实体类（图书、用户、借阅记录）  
-  - `services/`：业务逻辑处理  
-  - `ui/`：图形界面实现（管理员界面、用户界面）
-
----
-
-## 四、项目结构
-
-```plain
-LibrarySystem/
-│
-├── main.py                  # 程序主入口，启动界面及菜单控制
-├── config.py                # 全局配置参数
-│
-├── db/
-│   ├── __init__.py
-│   └── database.py          # 数据库连接与初始化
-│
-├── models/
-│   ├── __init__.py
-│   ├── book.py              # 图书实体类定义
-│   ├── user.py              # 用户实体类定义
-│   └── borrow_record.py     # 借阅记录实体类定义
-│
-├── services/
-│   ├── __init__.py
-│   ├── admin_service.py     # 管理员相关业务逻辑
-│   └── user_service.py      # 用户相关业务逻辑
-│
-├── ui/
-│   ├── __init__.py
-│   ├── admin_gui.py         # 管理员界面实现
-│   └── user_gui.py          # 用户界面实现
-│
-└── README.md                # 项目说明文档
+-- 创建测试图书数据
+INSERT INTO books (title, author, publisher, publish_date, price, total_copies, available_copies)
+VALUES 
+('Python编程从入门到实践', 'Eric Matthes', '人民邮电出版社', '2020-01-01', 89.00, 10, 10),
+('深入理解计算机系统', 'Randal E.Bryant', '机械工业出版社', '2019-05-15', 139.00, 5, 5),
+('算法导论', 'Thomas H.Cormen', '机械工业出版社', '2018-11-20', 128.00, 8, 8),
+('代码整洁之道', 'Robert C. Martin', '人民邮电出版社', '2020-03-01', 69.00, 7, 7),
+('重构：改善既有代码的设计', 'Martin Fowler', '人民邮电出版社', '2019-07-01', 99.00, 6, 6),
+('计算机程序的构造和解释', 'Harold Abelson', '机械工业出版社', '2019-04-01', 79.00, 4, 4),
+('C++ Primer Plus', 'Stephen Prata', '人民邮电出版社', '2020-02-15', 119.00, 5, 5),
+('Java核心技术 卷I', 'Cay S. Horstmann', '机械工业出版社', '2019-08-01', 149.00, 8, 8),
+('Effective Java', 'Joshua Bloch', '机械工业出版社', '2019-09-01', 89.00, 5, 5),
+('Head First设计模式', 'Eric Freeman', '中国电力出版社', '2020-05-01', 98.00, 6, 6),
+('数据库系统概念', 'Abraham Silberschatz', '机械工业出版社', '2019-06-01', 129.00, 4, 4),
+('MySQL必知必会', 'Ben Forta', '人民邮电出版社', '2020-04-01', 49.00, 10, 10),
+('高性能MySQL', 'Baron Schwartz', '电子工业出版社', '2019-10-01', 139.00, 3, 3),
+('计算机网络：自顶向下方法', 'James F. Kurose', '机械工业出版社', '2019-11-01', 89.00, 5, 5),
+('操作系统概念', 'Abraham Silberschatz', '高等教育出版社', '2020-01-15', 109.00, 4, 4),
+('现代操作系统', 'Andrew S. Tanenbaum', '机械工业出版社', '2019-12-01', 119.00, 3, 3),
+('编译原理', 'Alfred V. Aho', '机械工业出版社', '2019-07-15', 99.00, 2, 2),
+('人工智能：现代方法', 'Stuart Russell', '人民邮电出版社', '2020-03-15', 159.00, 5, 5),
+('机器学习', '周志华', '清华大学出版社', '2019-05-01', 88.00, 7, 7),
+('数学之美', '吴军', '人民邮电出版社', '2020-02-01', 69.00, 9, 9),
+('黑客与画家', 'Paul Graham', '人民邮电出版社', '2019-09-15', 59.00, 6, 6);

@@ -10,8 +10,20 @@ class AuthGUI:
         self.root = root
         self.root.title("图书管理系统")
         self.root.geometry("450x600")
-        self.root.configure(bg="#ffffff")
+        self.root.configure(bg="#f5f7fa")  # 统一背景色
         self.root.resizable(False, False)
+        
+        # UI配置变量 (与AdminGUI风格统一)
+        self.BG_COLOR = "#f5f7fa"
+        self.PRIMARY_COLOR = "#4e73df"
+        self.SECONDARY_COLOR = "#6c757d"
+        self.SUCCESS_COLOR = "#1cc88a"
+        self.DANGER_COLOR = "#e74a3b"
+        self.TEXT_DARK = "#2c3e50"
+        self.TEXT_LIGHT = "#7b8a8b"
+        self.FONT_TITLE = ("微软雅黑", 16, "bold")
+        self.FONT_LABEL = ("微软雅黑", 11)
+        self.FONT_BUTTON = ("微软雅黑", 11)
         
         # 设置窗口居中
         self._center_window()
@@ -44,8 +56,8 @@ class AuthGUI:
             self.root, 
             text="图书管理系统", 
             font=title_font, 
-            bg="#ffffff", 
-            fg="#2c3e50"
+            bg=self.BG_COLOR, 
+            fg=self.TEXT_DARK
         ).pack(pady=(40, 30))
 
         # 创建Notebook用于切换登录/注册
@@ -95,8 +107,8 @@ class AuthGUI:
             command=self.root.quit,
             width=15,
             height=1,
-            font=("微软雅黑", 10),
-            bg="#e74c3c",
+            font=self.FONT_BUTTON,
+            bg=self.DANGER_COLOR,
             fg="white",
             activebackground="#c0392b",
             relief="flat"
@@ -108,20 +120,20 @@ class AuthGUI:
             self.root, 
             text="© 2025 图书管理系统", 
             font=("微软雅黑", 8), 
-            bg="#ffffff", 
-            fg="#999999"
+            bg=self.BG_COLOR, 
+            fg=self.TEXT_LIGHT
         ).pack(side="bottom", pady=10)
     
     def setup_login_ui(self):
         """设置登录界面"""
         # 用户名输入
-        ttk.Label(self.login_frame, text="用户名:").pack(pady=(10, 0))
-        self.login_username = ttk.Entry(self.login_frame)
+        ttk.Label(self.login_frame, text="用户名:", font=self.FONT_LABEL).pack(pady=(10, 0))
+        self.login_username = ttk.Entry(self.login_frame, font=self.FONT_LABEL)
         self.login_username.pack(fill='x', padx=20, pady=5)
         
         # 密码输入
-        ttk.Label(self.login_frame, text="密码:").pack(pady=(10, 0))
-        self.login_password = ttk.Entry(self.login_frame, show="*")
+        ttk.Label(self.login_frame, text="密码:", font=self.FONT_LABEL).pack(pady=(10, 0))
+        self.login_password = ttk.Entry(self.login_frame, show="*", font=self.FONT_LABEL)
         self.login_password.pack(fill='x', padx=20, pady=5)
         
         # 登录按钮
@@ -131,10 +143,10 @@ class AuthGUI:
             command=self.handle_login,
             width=20,
             height=1,
-            font=("微软雅黑", 12),
-            bg="#3498db",
+            font=self.FONT_BUTTON,
+            bg=self.PRIMARY_COLOR,
             fg="white",
-            activebackground="#2980b9",
+            activebackground="#3a56b0",
             relief="flat"
         )
         login_btn.pack(pady=20)
@@ -148,23 +160,23 @@ class AuthGUI:
     def setup_register_ui(self):
         """设置普通用户注册界面"""
         # 用户名输入
-        ttk.Label(self.register_frame, text="用户名:").pack(pady=(5, 0))
-        self.reg_username = ttk.Entry(self.register_frame)
+        ttk.Label(self.register_frame, text="用户名:", font=self.FONT_LABEL).pack(pady=(5, 0))
+        self.reg_username = ttk.Entry(self.register_frame, font=self.FONT_LABEL)
         self.reg_username.pack(fill='x', padx=20, pady=5)
         
         # 密码输入
-        ttk.Label(self.register_frame, text="密码(至少6位):").pack(pady=(5, 0))
-        self.reg_password = ttk.Entry(self.register_frame, show="*")
+        ttk.Label(self.register_frame, text="密码(至少6位):", font=self.FONT_LABEL).pack(pady=(5, 0))
+        self.reg_password = ttk.Entry(self.register_frame, show="*", font=self.FONT_LABEL)
         self.reg_password.pack(fill='x', padx=20, pady=5)
         
         # 电话输入
-        ttk.Label(self.register_frame, text="电话:").pack(pady=(5, 0))
-        self.reg_phone = ttk.Entry(self.register_frame)
+        ttk.Label(self.register_frame, text="电话:", font=self.FONT_LABEL).pack(pady=(5, 0))
+        self.reg_phone = ttk.Entry(self.register_frame, font=self.FONT_LABEL)
         self.reg_phone.pack(fill='x', padx=20, pady=5)
         
         # 邮箱输入
-        ttk.Label(self.register_frame, text="邮箱:").pack(pady=(5, 0))
-        self.reg_email = ttk.Entry(self.register_frame)
+        ttk.Label(self.register_frame, text="邮箱:", font=self.FONT_LABEL).pack(pady=(5, 0))
+        self.reg_email = ttk.Entry(self.register_frame, font=self.FONT_LABEL)
         self.reg_email.pack(fill='x', padx=20, pady=5)
         
         # 注册按钮
@@ -174,10 +186,10 @@ class AuthGUI:
             command=self.handle_register,
             width=20,
             height=1,
-            font=("微软雅黑", 12),
-            bg="#2ecc71",
+            font=self.FONT_BUTTON,
+            bg=self.SUCCESS_COLOR,
             fg="white",
-            activebackground="#27ae60",
+            activebackground="#1aa079",
             relief="flat"
         )
         register_btn.pack(pady=15)
@@ -185,23 +197,23 @@ class AuthGUI:
     def setup_admin_ui(self):
         """设置管理员注册界面"""
         # 用户名输入
-        ttk.Label(self.admin_frame, text="管理员账号:").pack(pady=(5, 0))
-        self.admin_username = ttk.Entry(self.admin_frame)
+        ttk.Label(self.admin_frame, text="管理员账号:", font=self.FONT_LABEL).pack(pady=(5, 0))
+        self.admin_username = ttk.Entry(self.admin_frame, font=self.FONT_LABEL)
         self.admin_username.pack(fill='x', padx=20, pady=5)
         
         # 密码输入
-        ttk.Label(self.admin_frame, text="密码(至少8位):").pack(pady=(5, 0))
-        self.admin_password = ttk.Entry(self.admin_frame, show="*")
+        ttk.Label(self.admin_frame, text="密码(至少8位):", font=self.FONT_LABEL).pack(pady=(5, 0))
+        self.admin_password = ttk.Entry(self.admin_frame, show="*", font=self.FONT_LABEL)
         self.admin_password.pack(fill='x', padx=20, pady=5)
         
         # 验证码输入
-        ttk.Label(self.admin_frame, text=f"管理员验证码({ADMIN_SECRET_CODE}):").pack(pady=(5, 0))
-        self.admin_code = ttk.Entry(self.admin_frame, show="*")
+        ttk.Label(self.admin_frame, text=f"管理员验证码({ADMIN_SECRET_CODE}):", font=self.FONT_LABEL).pack(pady=(5, 0))
+        self.admin_code = ttk.Entry(self.admin_frame, show="*", font=self.FONT_LABEL)
         self.admin_code.pack(fill='x', padx=20, pady=5)
         
         # 电话输入
-        ttk.Label(self.admin_frame, text="联系电话:").pack(pady=(5, 0))
-        self.admin_phone = ttk.Entry(self.admin_frame)
+        ttk.Label(self.admin_frame, text="联系电话:", font=self.FONT_LABEL).pack(pady=(5, 0))
+        self.admin_phone = ttk.Entry(self.admin_frame, font=self.FONT_LABEL)
         self.admin_phone.pack(fill='x', padx=20, pady=5)
         
         # 注册按钮
@@ -211,7 +223,7 @@ class AuthGUI:
             command=self.handle_admin_register,
             width=20,
             height=1,
-            font=("微软雅黑", 12),
+            font=self.FONT_BUTTON,
             bg="#e67e22",
             fg="white",
             activebackground="#d35400",
@@ -244,7 +256,7 @@ class AuthGUI:
             
             self.root.destroy()
             if user['role'] == 'admin':
-                app = AdminGUI(username=username)  # 修改处：传递用户名给AdminGUI
+                app = AdminGUI(username=username)  # 传递用户名给AdminGUI
             else:
                 app = UserGUI(username=username)
             app.mainloop()
