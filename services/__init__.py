@@ -3,7 +3,7 @@ from config import DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 
 # 导入服务函数
 from services.admin_service import add_book, delete_book, modify_book, query_book, query_all_books
-from services.user_service import query_books, borrow_book, return_book, get_user_borrowed
+from services.user_service import query_books, borrow_book, return_book, get_user_borrowed,get_user_info
 
 # 初始化数据库连接（可选是否共享）
 def init_database():

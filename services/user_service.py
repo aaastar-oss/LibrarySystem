@@ -78,3 +78,28 @@ def search_book(keyword: str):
         print(f"[search_book] 异常：{e}")
         print(traceback.format_exc())
         return None
+    
+def get_user_info(username):
+    """
+    获取用户详细信息
+    :param username: 用户名
+    :return: 包含用户信息的字典
+    """
+    try:
+        # 调用数据库接口
+        user_data = database_user.get_user_by_username(username)
+        
+        if not user_data:
+            raise ValueError("用户不存在")
+        
+        return {
+            'username': user_data['username'],
+            'role': user_data['role'],
+            'phone': user_data.get('phone', ''),
+            'email': user_data.get('email', ''),
+            'max_borrow': user_data.get('max_borrow', 5),
+            'current_borrowed': database_user.get_borrowed_count(username),
+            'register_time': user_data.get('register_time', '未知')
+        }
+    except Exception as e:
+        raise Exception(f"获取用户信息失败: {str(e)}")

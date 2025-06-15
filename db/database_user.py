@@ -209,3 +209,48 @@ def find_book_by_id_or_title(keyword: str) -> Optional[Dict]:
     finally:
         cursor.close()
         conn.close()
+
+def get_user_by_username(username):
+    """
+    根据用户名获取用户信息
+    :param username: 用户名
+    :return: 用户信息字典或None
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT username, role, phone, email, max_borrow, 
+                   DATE_FORMAT(created_at, '%Y-%m-%d %H:%i') as register_time
+            FROM users 
+            WHERE username = %s
+        """, (username,))
+        return cursor.fetchone()
+    except Exception as e:
+        print(f"数据库查询出错: {e}")
+        return None
+    finally:
+        if conn:
+            conn.close()
+
+def get_borrowed_count(username):
+    """
+    获取用户当前借阅数量
+    :param username: 用户名
+    :return: 借阅数量
+    """
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM borrow_records 
+            WHERE username = %s AND return_time IS NULL
+        """, (username,))
+        return cursor.fetchone()[0] or 0
+    except Exception as e:
+        print(f"获取借阅数量出错: {e}")
+        return 0
+    finally:
+        if conn:
+            conn.close()
