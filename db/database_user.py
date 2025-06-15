@@ -220,7 +220,7 @@ def get_user_by_username(username):
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("""
-            SELECT username, role, phone, email, max_borrow
+            SELECT username, password,role, phone, email, max_borrow
             FROM users 
             WHERE username = %s
         """, (username,))
@@ -250,6 +250,25 @@ def get_borrowed_count(username):
     except Exception as e:
         print(f"获取借阅数量出错: {e}")
         return 0
+    finally:
+        if conn:
+            conn.close()
+
+
+def create_user(username: str, password: str, phone: str, email: str, role: str = 'user', max_borrow: int = 5) -> bool:
+    """创建新用户"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO users (username, password, role, phone, email, max_borrow)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (username, password, role, phone, email, max_borrow))
+        conn.commit()
+        return cursor.rowcount > 0
+    except Error as e:
+        print(f"[ERROR] create_user: {e}")
+        return False
     finally:
         if conn:
             conn.close()
