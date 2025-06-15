@@ -1,416 +1,271 @@
 import tkinter as tk
-from services import admin_service  # 导入业务逻辑模块
-
-
-# 全局UI配置
-BG_COLOR = "#ffffff"
-FONT_TITLE = ("微软雅黑", 24, "bold")
-FONT_LABEL = ("微软雅黑", 14)
-FONT_BUTTON = ("微软雅黑", 14)
-BTN_BG = "#3498db"
-BTN_FG = "white"
-BTN_ACTIVE_BG = "#2980b9"
-BTN_ACTIVE_FG = "white"
-STATUS_FG_ERROR = "#e74c3c"
-STATUS_FG_SUCCESS = "#27ae60"
-
+from tkinter import ttk
+from services import admin_service
+from ui.pages import (
+    AddBookPage,
+    DeleteBookPage,
+    ModifyBookPage,
+    QueryBookPage,
+    QueryUserPage,
+    OverviewBooksPage
+)
 
 class AdminGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("图书管理系统 - 管理员")
-        self.geometry("600x720")
-        self.configure(bg=BG_COLOR)
-
+        self.geometry("1200x800")
+        
+        # UI配置变量（改为实例属性）
+        self.BG_COLOR = "#f5f7fa"
+        self.SIDEBAR_BG = "#2c3e50"
+        self.SIDEBAR_HEADER_BG = "#34495e"
+        self.ACTIVE_BG = "#3498db"
+        self.CARD_BG = "#ffffff"
+        self.PRIMARY_COLOR = "#4e73df"
+        self.SECONDARY_COLOR = "#6c757d"
+        self.SUCCESS_COLOR = "#1cc88a"
+        self.DANGER_COLOR = "#e74a3b"
+        self.TEXT_DARK = "#2c3e50"
+        self.TEXT_LIGHT = "#7b8a8b"
+        self.FONT_TITLE = ("微软雅黑", 16, "bold")
+        self.FONT_LABEL = ("微软雅黑", 11)
+        self.FONT_BUTTON = ("微软雅黑", 11)
+        self.BTN_BG = self.PRIMARY_COLOR
+        self.BTN_FG = "white"
+        self.BTN_ACTIVE_BG = "#2e59d9"
+        self.BTN_ACTIVE_FG = "white"
+        self.STATUS_FG_ERROR = self.DANGER_COLOR
+        self.STATUS_FG_SUCCESS = self.SUCCESS_COLOR
+        self.ENTRY_BG = "#ffffff"
+        self.BORDER_COLOR = "#d1d3e2"
+        
+        self.configure(bg=self.BG_COLOR)
+        
+        # 初始化关键属性
+        self.current_active_menu = "图书总览"
         self.frames = {}
+        self.menu_buttons = {}
+        
+        # 主容器
+        self.container = tk.Frame(self, bg=self.BG_COLOR)
+        self.container.pack(fill="both", expand=True)
+        
+        # 创建状态栏
+        self._create_status_bar()
+        
+        # 内容区域
+        self.content = tk.Frame(self.container, bg=self.BG_COLOR)
+        self.content.pack(side="right", fill="both", expand=True, padx=20, pady=20)
+        
+        # 初始化所有页面
+        self._init_all_pages()
+        
+        # 创建侧边栏
+        self._create_sidebar()
 
-        # 初始化所有页面Frame
-        for F in (MenuPage, AddBookPage, DeleteBookPage, ModifyBookPage, QueryBookPage, QueryUserPage, OverviewBooksPage):
-            page_name = F.__name__
-            frame = F(parent=self, controller=self)
-            self.frames[page_name] = frame
-            frame.place(relwidth=1, relheight=1)
+        # 默认显示首页
+        self.show_frame("OverviewBooksPage")
 
-        # 状态栏放主窗口底部，所有页面共用
-        self.status_label = tk.Label(self, text="", font=FONT_LABEL, bg=BG_COLOR, fg=STATUS_FG_ERROR)
-        self.status_label.pack(side="bottom", pady=10)
+    def _create_status_bar(self):
+        """创建底部状态栏"""
+        status_frame = tk.Frame(self, bg="#e0e6ed", height=30)
+        status_frame.pack(side="bottom", fill="x")
+        
+        self.status_label = tk.Label(
+            status_frame, 
+            text="系统就绪", 
+            font=("微软雅黑", 10), 
+            bg="#e0e6ed", 
+            fg="#666666"
+        )
+        self.status_label.pack(side="left", padx=10)
+        
+        tk.Label(
+            status_frame, 
+            text="© 2025 图书管理系统", 
+            font=("微软雅黑", 9), 
+            bg="#e0e6ed", 
+            fg="#999999"
+        ).pack(side="right", padx=10)
 
-        # 底部版权
-        tk.Label(self, text="© 2025 图书管理系统", font=("微软雅黑", 10), bg=BG_COLOR, fg="#999999").pack(side="bottom", pady=5)
+    def _init_all_pages(self):
+        """初始化所有功能页面"""
+        print("正在初始化所有页面...")  # 调试信息
+        
+        # 图书总览页
+        self.frames["OverviewBooksPage"] = OverviewBooksPage(self.content, self)
+        print("OverviewBooksPage 初始化完成")
+        
+        # 添加图书页
+        self.frames["AddBookPage"] = AddBookPage(self.content, self)
+        print("AddBookPage 初始化完成")
+        
+        # 删除图书页
+        self.frames["DeleteBookPage"] = DeleteBookPage(self.content, self)
+        print("DeleteBookPage 初始化完成")
+        
+        # 修改图书页
+        self.frames["ModifyBookPage"] = ModifyBookPage(self.content, self)
+        print("ModifyBookPage 初始化完成")
+        
+        # 查询图书页
+        self.frames["QueryBookPage"] = QueryBookPage(self.content, self)
+        print("QueryBookPage 初始化完成")
+        
+        # 用户查询页
+        self.frames["QueryUserPage"] = QueryUserPage(self.content, self)
+        print("QueryUserPage 初始化完成")
+        
+        # 初始隐藏所有页面
+        for name, page in self.frames.items():
+            page.pack_forget()
+            print(f"已隐藏页面: {name}")
 
-        self.show_frame("MenuPage")
+    def _create_sidebar(self):
+        """创建左侧导航栏"""
+        sidebar = tk.Frame(self.container, bg=self.SIDEBAR_BG, width=250)
+        sidebar.pack(side="left", fill="y")
+        
+        # 系统标题
+        tk.Label(
+            sidebar,
+            text="图书管理系统",
+            font=self.FONT_TITLE,
+            bg=self.SIDEBAR_BG,
+            fg="white",
+            padx=50,
+            pady=20
+        ).pack(fill="x")
+        
+        # 菜单项配置
+        menu_items = [
+            {"header": "图书管理", "items": [("图书总览", "OverviewBooksPage")]},
+            {"header": "数据管理", "items": [
+                ("录入图书", "AddBookPage"), 
+                ("修改图书", "ModifyBookPage"),
+                ("删除图书", "DeleteBookPage")
+            ]},
+            {"header": "查询系统", "items": [
+                ("查询图书", "QueryBookPage"),
+                ("用户查询", "QueryUserPage")
+            ]}
+        ]
+        
+        for section in menu_items:
+            # 分类标题
+            tk.Label(
+                sidebar,
+                text=section["header"],
+                font=("微软雅黑", 12),
+                bg=self.SIDEBAR_HEADER_BG,
+                fg="white",
+                pady=10,
+                anchor="w"
+            ).pack(fill="x", padx=10)
+            
+            # 菜单项
+            for text, page_name in section["items"]:
+                btn = tk.Label(
+                    sidebar,
+                    text=text,
+                    font=self.FONT_LABEL,
+                    bg=self.ACTIVE_BG if text == self.current_active_menu else self.SIDEBAR_BG,
+                    fg="white",
+                    padx=20,
+                    pady=10,
+                    anchor="w",
+                    cursor="hand2"
+                )
+                btn.pack(fill="x")
+                self.menu_buttons[text] = btn
+                
+                # 绑定点击事件
+                btn.bind("<Button-1>", lambda e, p=page_name: self.show_frame(p))
+                
+                # 悬停效果
+                if text != self.current_active_menu:
+                    btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#34495e"))
+                    btn.bind("<Leave>", lambda e, b=btn: b.config(bg=self.SIDEBAR_BG))
+        
+        # 用户信息
+        tk.Label(
+            sidebar,
+            text="当前用户：管理员",
+            font=("微软雅黑", 10),
+            bg=self.SIDEBAR_HEADER_BG,
+            fg="white",
+            pady=15
+        ).pack(side="bottom", fill="x")
 
-    def show_frame(self, page_name, **kwargs):
+    def show_frame(self, page_name):
+        """显示指定页面"""
+        print(f"尝试显示页面: {page_name}")  # 调试信息
+        
+        if page_name not in self.frames:
+            error_msg = f"错误：页面 {page_name} 不存在"
+            print(error_msg)
+            self.set_status(error_msg, self.DANGER_COLOR)
+            return
+        
+        # 隐藏所有页面
+        for name, frame in self.frames.items():
+            frame.pack_forget()
+            print(f"已隐藏页面: {name}")
+        
+        # 更新菜单高亮
+        self._update_menu_highlight(page_name)
+        
+        # 显示目标页面
         frame = self.frames[page_name]
         if hasattr(frame, "update_data"):
-            frame.update_data(**kwargs)
-        frame.tkraise()
+            print(f"调用 {page_name} 的 update_data()")
+            frame.update_data()
+        
+        print(f"显示页面: {page_name}")
+        frame.pack(fill="both", expand=True)
+        self.update()  # 强制更新界面
 
-    def set_status(self, msg, color=STATUS_FG_ERROR):
-        self.status_label.config(text=msg, fg=color)
-
-
-class MenuPage(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent, bg=BG_COLOR)
-        self.controller = controller
-
-        title_label = tk.Label(self, text="管理员菜单", font=FONT_TITLE, fg="#2c3e50", bg=BG_COLOR)
-        title_label.pack(pady=(50, 40))
-
-        btn_frame = tk.Frame(self, bg=BG_COLOR)
-        btn_frame.pack(pady=20)
-
-        btn_config = {
-            "width": 28,
-            "height": 2,
-            "font": FONT_BUTTON,
-            "bg": BTN_BG,
-            "fg": BTN_FG,
-            "activebackground": BTN_ACTIVE_BG,
-            "activeforeground": BTN_ACTIVE_FG,
-            "relief": "flat",
-            "bd": 0,
-            "cursor": "hand2"
+    def _update_menu_highlight(self, page_name):
+        """更新菜单高亮状态"""
+        page_to_text = {
+            "OverviewBooksPage": "图书总览",
+            "AddBookPage": "录入图书",
+            "ModifyBookPage": "修改图书", 
+            "DeleteBookPage": "删除图书",
+            "QueryBookPage": "查询图书",
+            "QueryUserPage": "用户查询"
         }
+        
+        if page_name not in page_to_text:
+            return
+        
+        new_active = page_to_text[page_name]
+        
+        # 清除旧高亮
+        if self.current_active_menu:
+            old_btn = self.menu_buttons[self.current_active_menu]
+            old_btn.config(bg=self.SIDEBAR_BG)
+            old_btn.bind("<Enter>", lambda e, b=old_btn: b.config(bg="#34495e"))
+            old_btn.bind("<Leave>", lambda e, b=old_btn: b.config(bg=self.SIDEBAR_BG))
+        
+        # 设置新高亮
+        new_btn = self.menu_buttons[new_active]
+        new_btn.config(bg=self.ACTIVE_BG)
+        new_btn.unbind("<Enter>")
+        new_btn.unbind("<Leave>")
+        
+        self.current_active_menu = new_active
+        print(f"更新菜单高亮: {new_active}")
 
-        buttons = [
-            ("录入图书", lambda: controller.show_frame("AddBookPage")),
-            ("删除图书", lambda: controller.show_frame("DeleteBookPage")),
-            ("修改图书信息", lambda: controller.show_frame("ModifyBookPage")),
-            ("查询图书信息和状态", lambda: controller.show_frame("QueryBookPage")),
-            ("查询用户借书状态", lambda: controller.show_frame("QueryUserPage")),
-            ("总览图书信息和状态", lambda: controller.show_frame("OverviewBooksPage")),
-            ("退出系统", controller.quit)
-        ]
-
-        for label, command in buttons:
-            btn = tk.Button(btn_frame, text=label, command=command, **btn_config)
-            btn.pack(pady=10)
-
-
-class AddBookPage(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent, bg=BG_COLOR)
-        self.controller = controller
-        self.create_widgets()
-
-    def create_widgets(self):
-        tk.Label(self, text="录入图书", font=FONT_TITLE, bg=BG_COLOR).pack(pady=20)
-
-        labels = ["编号", "书名", "作者", "出版社", "出版日期", "价格"]
-        self.entries = []
-
-        form_frame = tk.Frame(self, bg=BG_COLOR)
-        form_frame.pack(pady=10)
-
-        for i, label_text in enumerate(labels):
-            tk.Label(form_frame, text=label_text, font=FONT_LABEL, bg=BG_COLOR).grid(row=i, column=0, padx=10, pady=8, sticky='e')
-            entry = tk.Entry(form_frame, width=30, font=FONT_LABEL)
-            entry.grid(row=i, column=1, padx=10, pady=8)
-            self.entries.append(entry)
-
-        self.status = tk.Label(self, text="", fg=STATUS_FG_ERROR, bg=BG_COLOR, font=FONT_LABEL)
-        self.status.pack(pady=5)
-
-        btn_frame = tk.Frame(self, bg=BG_COLOR)
-        btn_frame.pack(pady=15)
-        tk.Button(btn_frame, text="保存", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=self.save_book).grid(row=0, column=0, padx=10)
-        tk.Button(btn_frame, text="返回菜单", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=lambda: self.controller.show_frame("MenuPage")).grid(row=0, column=1, padx=10)
-
-    def save_book(self):
-        data = [e.get().strip() for e in self.entries]
-        if all(data):
-            try:
-                book = {
-                    "id": data[0],
-                    "title": data[1],
-                    "author": data[2],
-                    "publisher": data[3],
-                    "pub_date": data[4],
-                    "price": float(data[5])
-                }
-                admin_service.add_book(book)
-                self.status.config(text="图书已成功录入！", fg=STATUS_FG_SUCCESS)
-                self.controller.set_status("录入图书成功", color=STATUS_FG_SUCCESS)
-                self.after(1500, self.clear_and_return)
-            except Exception as e:
-                self.status.config(text=f"录入失败：{e}", fg=STATUS_FG_ERROR)
-                self.controller.set_status(f"录入失败：{e}")
-        else:
-            self.status.config(text="请填写所有字段！", fg=STATUS_FG_ERROR)
-            self.controller.set_status("录入图书失败：输入不完整")
-
-    def clear_and_return(self):
-        for e in self.entries:
-            e.delete(0, tk.END)
-        self.status.config(text="")
-        self.controller.show_frame("MenuPage")
-
-
-class DeleteBookPage(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent, bg=BG_COLOR)
-        self.controller = controller
-        self.create_widgets()
-
-    def create_widgets(self):
-        tk.Label(self, text="删除图书", font=FONT_TITLE, bg=BG_COLOR).pack(pady=20)
-        tk.Label(self, text="图书编号：", font=FONT_LABEL, bg=BG_COLOR).pack(pady=10)
-
-        self.entry = tk.Entry(self, width=30, font=FONT_LABEL)
-        self.entry.pack()
-
-        self.status = tk.Label(self, text="", fg=STATUS_FG_ERROR, bg=BG_COLOR, font=FONT_LABEL)
-        self.status.pack(pady=5)
-
-        btn_frame = tk.Frame(self, bg=BG_COLOR)
-        btn_frame.pack(pady=15)
-        tk.Button(btn_frame, text="删除", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=self.do_delete).grid(row=0, column=0, padx=10)
-        tk.Button(btn_frame, text="返回菜单", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=lambda: self.controller.show_frame("MenuPage")).grid(row=0, column=1, padx=10)
-
-    def do_delete(self):
-        book_id = self.entry.get().strip()
-        if book_id:
-            success = admin_service.delete_book(book_id)
-            if success:
-                self.status.config(text=f"图书 {book_id} 删除成功", fg=STATUS_FG_SUCCESS)
-                self.controller.set_status(f"删除图书 {book_id} 成功", color=STATUS_FG_SUCCESS)
-                self.after(1500, self.clear_and_return)
-            else:
-                self.status.config(text=f"图书 {book_id} 不存在", fg=STATUS_FG_ERROR)
-                self.controller.set_status(f"删除失败：图书 {book_id} 不存在")
-        else:
-            self.status.config(text="请输入图书编号", fg=STATUS_FG_ERROR)
-            self.controller.set_status("删除失败：请输入图书编号")
-
-    def clear_and_return(self):
-        self.entry.delete(0, tk.END)
-        self.status.config(text="")
-        self.controller.show_frame("MenuPage")
-
-
-class ModifyBookPage(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent, bg=BG_COLOR)
-        self.controller = controller
-        self.create_widgets()
-
-    def create_widgets(self):
-        tk.Label(self, text="修改图书信息", font=FONT_TITLE, bg=BG_COLOR).pack(pady=20)
-
-        form_frame = tk.Frame(self, bg=BG_COLOR)
-        form_frame.pack(pady=10)
-
-        tk.Label(form_frame, text="请输入图书编号：", font=FONT_LABEL, bg=BG_COLOR).grid(row=0, column=0, padx=10, pady=8, sticky='e')
-        self.entry_id = tk.Entry(form_frame, width=30, font=FONT_LABEL)
-        self.entry_id.grid(row=0, column=1, padx=10, pady=8)
-
-        labels = ["作者", "出版社", "出版日期", "价格"]
-        self.entries = []
-
-        for i, label_text in enumerate(labels, start=1):
-            tk.Label(form_frame, text=label_text, font=FONT_LABEL, bg=BG_COLOR).grid(row=i, column=0, padx=10, pady=8, sticky='e')
-            entry = tk.Entry(form_frame, width=30, font=FONT_LABEL)
-            entry.grid(row=i, column=1, padx=10, pady=8)
-            self.entries.append(entry)
-
-        self.status = tk.Label(self, text="", fg=STATUS_FG_ERROR, bg=BG_COLOR, font=FONT_LABEL)
-        self.status.pack(pady=5)
-
-        btn_frame = tk.Frame(self, bg=BG_COLOR)
-        btn_frame.pack(pady=15)
-        tk.Button(btn_frame, text="修改", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=self.do_modify).grid(row=0, column=0, padx=10)
-        tk.Button(btn_frame, text="返回菜单", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=lambda: self.controller.show_frame("MenuPage")).grid(row=0, column=1, padx=10)
-
-    def do_modify(self):
-        book_id = self.entry_id.get().strip()
-        data = [e.get().strip() for e in self.entries]
-        if book_id and all(data):
-            try:
-                new_data = {
-                    "author": data[0],
-                    "publisher": data[1],
-                    "pub_date": data[2],
-                    "price": float(data[3])
-                }
-                success = admin_service.modify_book(book_id, new_data)
-                if success:
-                    self.status.config(text=f"图书 {book_id} 信息已更新", fg=STATUS_FG_SUCCESS)
-                    self.controller.set_status(f"修改图书 {book_id} 成功", color=STATUS_FG_SUCCESS)
-                    self.after(1500, self.clear_and_return)
-                else:
-                    self.status.config(text=f"图书 {book_id} 不存在", fg=STATUS_FG_ERROR)
-                    self.controller.set_status(f"修改失败：图书 {book_id} 不存在")
-            except Exception as e:
-                self.status.config(text=f"修改失败：{e}", fg=STATUS_FG_ERROR)
-                self.controller.set_status(f"修改失败：{e}")
-        else:
-            self.status.config(text="请填写所有字段", fg=STATUS_FG_ERROR)
-            self.controller.set_status("修改失败：输入不完整")
-
-    def clear_and_return(self):
-        self.entry_id.delete(0, tk.END)
-        for e in self.entries:
-            e.delete(0, tk.END)
-        self.status.config(text="")
-        self.controller.show_frame("MenuPage")
-
-
-class QueryBookPage(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent, bg=BG_COLOR)
-        self.controller = controller
-        self.create_widgets()
-
-    def create_widgets(self):
-        tk.Label(self, text="查询图书信息", font=FONT_TITLE, bg=BG_COLOR).pack(pady=20)
-        tk.Label(self, text="请输入图书编号或书名：", font=FONT_LABEL, bg=BG_COLOR).pack(pady=10)
-
-        self.entry = tk.Entry(self, width=35, font=FONT_LABEL)
-        self.entry.pack()
-
-        self.result_text = tk.Text(self, height=8, width=50, font=FONT_LABEL)
-        self.result_text.pack(pady=10)
-
-        self.status = tk.Label(self, text="", fg=STATUS_FG_ERROR, bg=BG_COLOR, font=FONT_LABEL)
-        self.status.pack(pady=5)
-
-        btn_frame = tk.Frame(self, bg=BG_COLOR)
-        btn_frame.pack(pady=15)
-        tk.Button(btn_frame, text="查询", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=self.do_query).grid(row=0, column=0, padx=10)
-        tk.Button(btn_frame, text="返回菜单", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=lambda: self.controller.show_frame("MenuPage")).grid(row=0, column=1, padx=10)
-
-    def do_query(self):
-        keyword = self.entry.get().strip()
-        self.result_text.delete('1.0', tk.END)
-        if keyword:
-            result = admin_service.query_book(keyword)
-            if result:
-                book_str = (f"编号: {result[0]}\n书名: {result[1]}\n作者: {result[2]}"
-                            f"\n出版社: {result[3]}\n出版日期: {result[4]}\n价格: {result[5]}")
-                self.result_text.insert(tk.END, book_str)
-                self.status.config(text="")
-                self.controller.set_status(f"查询图书 {keyword} 成功", color=STATUS_FG_SUCCESS)
-            else:
-                self.status.config(text="未找到该图书", fg=STATUS_FG_ERROR)
-                self.controller.set_status("查询失败：未找到该图书")
-        else:
-            self.status.config(text="请输入图书编号或书名", fg=STATUS_FG_ERROR)
-            self.controller.set_status("查询失败：请输入图书编号或书名")
-
-    def update_data(self):
-        # 每次进入页面清空输入和结果
-        self.entry.delete(0, tk.END)
-        self.result_text.delete('1.0', tk.END)
-        self.status.config(text="")
-
-
-class QueryUserPage(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent, bg=BG_COLOR)
-        self.controller = controller
-        self.create_widgets()
-
-    def create_widgets(self):
-        tk.Label(self, text="查询用户借阅状态", font=FONT_TITLE, bg=BG_COLOR).pack(pady=20)
-        tk.Label(self, text="请输入用户名：", font=FONT_LABEL, bg=BG_COLOR).pack(pady=10)
-
-        self.entry = tk.Entry(self, width=35, font=FONT_LABEL)
-        self.entry.pack()
-
-        self.result_text = tk.Text(self, height=10, width=55, font=FONT_LABEL)
-        self.result_text.pack(pady=10)
-
-        self.status = tk.Label(self, text="", fg=STATUS_FG_ERROR, bg=BG_COLOR, font=FONT_LABEL)
-        self.status.pack(pady=5)
-
-        btn_frame = tk.Frame(self, bg=BG_COLOR)
-        btn_frame.pack(pady=15)
-        tk.Button(btn_frame, text="查询", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=self.do_query).grid(row=0, column=0, padx=10)
-        tk.Button(btn_frame, text="返回菜单", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=lambda: self.controller.show_frame("MenuPage")).grid(row=0, column=1, padx=10)
-
-    def do_query(self):
-        username = self.entry.get().strip()
-        self.result_text.delete('1.0', tk.END)
-        if username:
-            books = admin_service.query_user(username)
-            if books:
-                info = "\n".join([f"编号: {b[0]}, 书名: {b[1]}, 借阅日期: {b[2]}" for b in books])
-                self.result_text.insert(tk.END, info)
-                self.status.config(text="")
-                self.controller.set_status(f"查询用户 {username} 借阅状态成功", color=STATUS_FG_SUCCESS)
-            else:
-                self.status.config(text="该用户无借阅记录或不存在", fg=STATUS_FG_ERROR)
-                self.controller.set_status("查询失败：用户无借阅记录或不存在")
-        else:
-            self.status.config(text="请输入用户名", fg=STATUS_FG_ERROR)
-            self.controller.set_status("查询失败：请输入用户名")
-
-    def update_data(self):
-        self.entry.delete(0, tk.END)
-        self.result_text.delete('1.0', tk.END)
-        self.status.config(text="")
-
-
-class OverviewBooksPage(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent, bg=BG_COLOR)
-        self.controller = controller
-        self.create_widgets()
-
-    def create_widgets(self):
-        tk.Label(self, text="总览图书信息和状态", font=FONT_TITLE, bg=BG_COLOR).pack(pady=20)
-
-        self.text = tk.Text(self, width=70, height=25, font=FONT_LABEL)
-        self.text.pack(padx=10, pady=10)
-
-        btn_frame = tk.Frame(self, bg=BG_COLOR)
-        btn_frame.pack(pady=15)
-        tk.Button(btn_frame, text="刷新", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=self.refresh).grid(row=0, column=0, padx=10)
-        tk.Button(btn_frame, text="返回菜单", width=12, font=FONT_BUTTON, bg=BTN_BG, fg=BTN_FG,
-                  activebackground=BTN_ACTIVE_BG, activeforeground=BTN_ACTIVE_FG,
-                  relief="flat", bd=0, cursor="hand2", command=lambda: self.controller.show_frame("MenuPage")).grid(row=0, column=1, padx=10)
-
-    def refresh(self):
-        self.text.delete('1.0', tk.END)
-        books = admin_service.get_all_books()
-        if books:
-            for b in books:
-                line = (f"编号: {b[0]}, 书名: {b[1]}, 作者: {b[2]}, 出版社: {b[3]}, "
-                        f"出版日期: {b[4]}, 价格: {b[5]}, 库存: {b[6]}, 已借出: {b[7]}\n")
-                self.text.insert(tk.END, line)
-            self.controller.set_status("图书信息刷新成功", color=STATUS_FG_SUCCESS)
-        else:
-            self.text.insert(tk.END, "暂无图书信息")
-            self.controller.set_status("暂无图书信息", color=STATUS_FG_ERROR)
-
-    def update_data(self):
-        self.refresh()
-
+    def set_status(self, message, color=None):
+        """设置状态栏消息"""
+        color = color or self.DANGER_COLOR
+        if hasattr(self, 'status_label'):
+            self.status_label.config(text=message, fg=color)
+            print(f"状态栏更新: {message}")
 
 if __name__ == "__main__":
+    print("启动管理员界面...")
     app = AdminGUI()
     app.mainloop()
