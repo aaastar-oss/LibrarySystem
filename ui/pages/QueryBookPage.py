@@ -172,12 +172,13 @@ class QueryBookPage(tk.Frame):
             self.controller.set_status("查询失败：请输入查询条件")
             return
 
-        result = admin_service.query_book(keyword)
-        if not result:
+        result_list = admin_service.query_book(keyword)
+        if not result_list:
             self.status.config(text="✖ 未找到匹配图书", fg="#F44336")
             self.controller.set_status("查询失败：未找到匹配图书")
             return
 
+        result = result_list[0]  # 取第一个结果
         properties = [
             ("编号", result.get('id', '')),
             ("书名", result.get('title', '')),

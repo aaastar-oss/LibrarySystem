@@ -45,10 +45,13 @@ def query_book(keyword: str):
     try:
         result = database_admin.find_book_by_id_or_title(keyword)
         print(f"[query_book] 查询结果：{result}")
-        return result
+        if result:
+            return [result]
+        else:
+            return []
     except Exception as e:
         print(f"[query_book] 异常错误：{e}")
-        return None
+        return []
 
 
 def query_user(username: str):

@@ -156,7 +156,7 @@ class AddBookPage(tk.Frame):
                     "title": data[1],
                     "author": data[2],
                     "publisher": data[3],
-                    "pub_date": data[4],
+                    "publish_date": data[4],  # 改为 publish_date
                     "price": float(data[5])
                 }
                 result = admin_service.add_book(book)

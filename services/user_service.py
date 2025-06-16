@@ -71,13 +71,24 @@ def return_book(username: str, book_id: str) -> bool:
 def search_book(keyword: str):
     print(f"[search_book] 用户查询关键字：{keyword}")
     try:
-        result = database_user.find_book_by_id_or_title(keyword)
-        print(f"[search_book] 查询结果：{result}")
-        return result
+        db = database_user.get_connection()
+        query = {"$or": []}
+        if keyword.isdigit():
+            query["$or"].append({"id": int(keyword)})
+        if keyword:
+            query["$or"].append({"title": {"$regex": keyword}})
+            query["$or"].append({"author": {"$regex": keyword}})
+            query["$or"].append({"publisher": {"$regex": keyword}})
+        if not query["$or"]:
+            return []
+        result = db.books.find(query)
+        books = [book for book in result if book]
+        print(f"[search_book] 查询结果：{books}")
+        return books
     except Exception as e:
         print(f"[search_book] 异常：{e}")
         print(traceback.format_exc())
-        return None
+        return []
     
 def get_user_info(username):
     """获取用户详细信息 - 修正版本"""
