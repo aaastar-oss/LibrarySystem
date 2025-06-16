@@ -165,7 +165,7 @@ class AuthGUI:
         self.reg_username.pack(fill='x', padx=20, pady=5)
         
         # 密码输入
-        ttk.Label(self.register_frame, text="密码(至少6位):", font=self.FONT_LABEL).pack(pady=(5, 0))
+        ttk.Label(self.register_frame, text="密码(至少8位):", font=self.FONT_LABEL).pack(pady=(5, 0))
         self.reg_password = ttk.Entry(self.register_frame, show="*", font=self.FONT_LABEL)
         self.reg_password.pack(fill='x', padx=20, pady=5)
         

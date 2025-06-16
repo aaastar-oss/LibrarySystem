@@ -1,12 +1,29 @@
 from db.database_user import get_user_by_username, create_user
 import hashlib
 import traceback
+import secrets
 from typing import Optional, Dict
 
 # 安全提示：实际部署时应通过环境变量获取密钥
 ADMIN_SECRET_CODE = "ADMIN123"  # 管理员注册密码
 MIN_PASSWORD_LENGTH = 8  # 最小密码长度
 MAX_PASSWORD_LENGTH = 32  # 最大密码长度
+
+def _secure_compare(a: str, b: str) -> bool:
+    """安全比较两个字符串，防止时序攻击"""
+    if len(a) != len(b):
+        return False
+        
+    result = 0
+    for x, y in zip(a, b):
+        result |= ord(x) ^ ord(y)
+    return result == 0
+
+def _hash_password(password: str, salt: str = None) -> str:
+    """密码哈希处理"""
+    salt = salt or secrets.token_hex(16)  # 使用更安全的随机盐
+    salted_password = salt + password
+    return f"{salt}${hashlib.sha256(salted_password.encode()).hexdigest()}"
 
 def authenticate(username: str, password: str) -> Optional[Dict[str, str]]:
     """
@@ -16,30 +33,26 @@ def authenticate(username: str, password: str) -> Optional[Dict[str, str]]:
     :return: 用户信息字典或None
     :raises: ValueError 当输入无效时
     """
-    if not username or not isinstance(username, str):
+    if not isinstance(username, str) or not username.strip():
         raise ValueError("无效的用户名")
     
-    if not password or not isinstance(password, str):
+    if not isinstance(password, str) or not password.strip():
         raise ValueError("无效的密码")
     
     try:
-        user = get_user_by_username(username)
+        user = get_user_by_username(username.strip())
         if not user or 'password' not in user:
             return None
         
-        # 使用恒定时间比较防止时序攻击
-        hashed_input = hashlib.sha256(password.encode()).hexdigest()
-        stored_hash = user['password']
-        
-        # 安全比较哈希值
-        if len(hashed_input) != len(stored_hash):
+        # 解析存储的密码 (格式: salt$hash)
+        stored_parts = user['password'].split('$')
+        if len(stored_parts) != 2:
             return None
             
-        result = 0
-        for x, y in zip(hashed_input, stored_hash):
-            result |= ord(x) ^ ord(y)
+        salt, stored_hash = stored_parts
+        hashed_input = hashlib.sha256((salt + password).encode()).hexdigest()
         
-        if result != 0:
+        if not _secure_compare(hashed_input, stored_hash):
             return None
         
         return {
@@ -66,9 +79,10 @@ def register(username: str, password: str, phone: str, email: str,
     :raises: ValueError 当输入无效时
     """
     # 参数验证
-    if not all([username, password, phone, email]):
-        raise ValueError("所有字段都必须填写")
+    if not all(isinstance(x, str) for x in [username, password, phone, email]):
+        raise ValueError("所有字段都必须为字符串")
     
+    username = username.strip()
     if len(username) < 4 or len(username) > 20:
         raise ValueError("用户名长度需在4-20个字符之间")
     
@@ -83,17 +97,15 @@ def register(username: str, password: str, phone: str, email: str,
         if get_user_by_username(username):
             raise ValueError("用户名已存在")
         
-        # 密码加密 (加盐处理)
-        salt = hashlib.sha256(username.encode()).hexdigest()[:16]
-        salted_password = salt + password
-        hashed_pwd = hashlib.sha256(salted_password.encode()).hexdigest()
+        # 密码加密
+        hashed_pwd = _hash_password(password)
         
         # 创建用户
         success = create_user(
             username=username,
-            password=f"{salt}${hashed_pwd}",  # 存储盐值和哈希
-            phone=phone,
-            email=email,
+            password=hashed_pwd,
+            phone=phone.strip(),
+            email=email.strip(),
             role='admin' if is_admin else 'user',
             max_borrow=10 if is_admin else 5
         )
@@ -114,8 +126,10 @@ def validate_password_strength(password: str) -> bool:
     """验证密码强度"""
     if len(password) < MIN_PASSWORD_LENGTH:
         return False
+        
     # 检查是否包含数字、字母和特殊字符
     has_digit = any(c.isdigit() for c in password)
     has_letter = any(c.isalpha() for c in password)
     has_special = any(not c.isalnum() for c in password)
+    
     return has_digit and has_letter and has_special
