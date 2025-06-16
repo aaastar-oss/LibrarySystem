@@ -31,16 +31,27 @@ def get_user_borrowed_books(username: str) -> List[Dict]:
         user = db.users.find_one({"username": username})
         if not user:
             return []
+        now = datetime.datetime.utcnow()
         records = db.borrowrecords.find({"user_id": str(user["_id"]), "return_date": None})
         result = []
         for rec in records:
             book = db.books.find_one({"id": int(rec["book_id"])})
             if book:
+                borrow_date = rec.get("borrow_date")
+                due_date = rec.get("due_date")
+                # 判断超期状态
+                status = "overdue"
+                if isinstance(due_date, datetime.datetime):
+                    status = "normal" if due_date >= now else "overdue"
+                borrow_date_str = borrow_date.strftime("%Y-%m-%d %H:%M:%S") if isinstance(borrow_date, datetime.datetime) else str(borrow_date)
+                due_date_str = due_date.strftime("%Y-%m-%d %H:%M:%S") if isinstance(due_date, datetime.datetime) else str(due_date)
                 result.append({
                     "id": book.get("id"),
                     "title": book.get("title"),
-                    "borrow_date": rec.get("borrow_date"),
-                    "due_date": rec.get("due_date")
+                    "author": book.get("author"),
+                    "borrow_date": borrow_date_str,
+                    "due_date": due_date_str,
+                    "status": status
                 })
         return result
     except Exception as e:
@@ -54,10 +65,12 @@ def check_user_overdue(username: str) -> bool:
         user = db.users.find_one({"username": username})
         if not user:
             return False
+        now = datetime.datetime.utcnow()
+        # 只统计 due_date 是 datetime 类型且小于当前时间的记录
         count = db.borrowrecords.count_documents({
             "user_id": str(user["_id"]),
             "return_date": None,
-            "due_date": {"$lt": datetime.datetime.now()}
+            "due_date": {"$type": "date", "$lt": now}
         })
         return count > 0
     except Exception as e:
@@ -74,11 +87,12 @@ def insert_borrow_record(username: str, book_id: str) -> bool:
         book = db.books.find_one({"id": int(book_id)})
         if not book or book.get("available_copies", 0) <= 0:
             return False
+        now = datetime.datetime.utcnow()
         db.borrowrecords.insert_one({
             "user_id": str(user["_id"]),
             "book_id": str(book_id),
-            "borrow_date": datetime.datetime.now(),
-            "due_date": datetime.datetime.now() + datetime.timedelta(days=30),
+            "borrow_date": now,
+            "due_date": now + datetime.timedelta(days=30),
             "return_date": None
         })
         db.books.update_one({"id": int(book_id)}, {"$inc": {"available_copies": -1}})
@@ -94,9 +108,10 @@ def return_book_record(username: str, book_id: str) -> bool:
         user = db.users.find_one({"username": username})
         if not user:
             return False
+        now = datetime.datetime.utcnow()
         result = db.borrowrecords.update_one(
             {"user_id": str(user["_id"]), "book_id": str(book_id), "return_date": None},
-            {"$set": {"return_date": datetime.datetime.now()}}
+            {"$set": {"return_date": now}}
         )
         if result.modified_count > 0:
             db.books.update_one({"id": int(book_id)}, {"$inc": {"available_copies": 1}})

@@ -17,6 +17,7 @@ def get_user_borrowed(username: str):
     try:
         result = database_user.get_user_borrowed_books(username)
         print(f"[get_user_borrowed] 借阅记录：{len(result)} 条")
+        # result 里已包含 status 字段，前端直接用
         return result
     except Exception as e:
         print(f"[get_user_borrowed] 异常：{e}")
