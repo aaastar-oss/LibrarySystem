@@ -177,6 +177,10 @@ class QueryUserPage(tk.Frame):
             return
 
         books = admin_service.query_user(username)
+        if books == "not_found":
+            self.status.config(text="✖ 用户不存在", fg="#F44336")
+            self.controller.set_status("查询失败：用户不存在")
+            return
         if not books:
             self.status.config(text="✖ 该用户无借阅记录", fg="#F44336")
             self.controller.set_status("查询失败：用户无借阅记录")

@@ -4,7 +4,6 @@ import traceback
 import secrets
 from typing import Optional, Dict
 
-# 安全提示：实际部署时应通过环境变量获取密钥
 ADMIN_SECRET_CODE = "ADMIN123"  # 管理员注册密码
 MIN_PASSWORD_LENGTH = 8  # 最小密码长度
 MAX_PASSWORD_LENGTH = 32  # 最大密码长度
@@ -21,7 +20,7 @@ def _secure_compare(a: str, b: str) -> bool:
 
 def _hash_password(password: str, salt: str = None) -> str:
     """密码哈希处理"""
-    salt = salt or secrets.token_hex(16)  # 使用更安全的随机盐
+    salt = salt or secrets.token_hex(16)  # 使用更安全的
     salted_password = salt + password
     return f"{salt}${hashlib.sha256(salted_password.encode()).hexdigest()}"
 
@@ -107,7 +106,7 @@ def register(username: str, password: str, phone: str, email: str,
             phone=phone.strip(),
             email=email.strip(),
             role='admin' if is_admin else 'user',
-            max_borrow=10 if is_admin else 5
+            max_borrow=10 if is_admin else 2
         )
         
         if not success:

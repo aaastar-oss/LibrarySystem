@@ -88,7 +88,7 @@ class OverviewBooksPage(tk.Frame):
         # 创建表格
         self.tree = ttk.Treeview(
             table_frame,
-            columns=("id", "title", "author", "publisher", "publish_date", "price", "stock", "borrowed"),
+            columns=("id", "title", "author", "publisher", "publish_date", "price", "available_copies", "total_copies", "borrowed"),
             show="headings",
             height=15,
             selectmode="extended"
@@ -102,7 +102,8 @@ class OverviewBooksPage(tk.Frame):
             ("publisher", "出版社", 150),
             ("publish_date", "出版日期", 120),
             ("price", "价格", 80),
-            ("stock", "库存", 60),
+            ("available_copies", "库存", 60),
+            ("total_copies", "总库存", 60),
             ("borrowed", "已借出", 60)
         ]
         
@@ -150,21 +151,15 @@ class OverviewBooksPage(tk.Frame):
         if data:
             for i, book in enumerate(data):
                 publish_date = book.get('publish_date', '')
-                # 更健壮的日期处理
-                if hasattr(publish_date, 'strftime'):  # 检查是否是日期对象
+                if hasattr(publish_date, 'strftime'):
                     publish_date = publish_date.strftime('%Y-%m-%d')
                 elif publish_date is None:
                     publish_date = ''
-                
-                # 格式化价格
                 try:
                     price = f"{float(book.get('price', 0)):.2f}"
                 except (ValueError, TypeError):
                     price = "0.00"
-                
-                # 交替行颜色
                 tags = ("evenrow",) if i % 2 == 0 else ("oddrow",)
-                
                 self.tree.insert("", "end", values=(
                     book.get('id', ''),
                     book.get('title', ''),
@@ -172,6 +167,7 @@ class OverviewBooksPage(tk.Frame):
                     book.get('publisher', ''),
                     str(publish_date),
                     price,
+                    book.get('available_copies', 0),
                     book.get('total_copies', 0),
                     book.get('borrowed', 0)
                 ), tags=tags)

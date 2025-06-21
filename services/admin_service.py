@@ -57,6 +57,12 @@ def query_book(keyword: str):
 def query_user(username: str):
     print(f"[query_user] 查询用户借阅记录，用户名：{username}")
     try:
+        # 先判断用户是否存在
+        from db import database_user
+        user = database_user.get_user_by_username(username)
+        if not user:
+            print(f"[query_user] 用户不存在：{username}")
+            return "not_found"
         result = database_admin.find_user_borrow_records(username)
         print(f"[query_user] 查询结果：{result}")
         return result

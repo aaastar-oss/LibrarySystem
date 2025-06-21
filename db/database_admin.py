@@ -126,7 +126,8 @@ def get_all_books_fullinfo() -> List[Dict]:
                 "publisher": book.get("publisher"),
                 "publish_date": book.get("publish_date"),
                 "price": book.get("price"),
-                "stock": book.get("total_copies"),
+                "available_copies": book.get("available_copies", 0),  # 修正字段名
+                "total_copies": book.get("total_copies", 0),
                 "borrowed": book.get("total_copies", 0) - book.get("available_copies", 0),
                 "isbn": book.get("isbn", ""),
                 "category": book.get("category", "")

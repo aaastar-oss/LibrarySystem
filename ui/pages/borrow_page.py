@@ -149,25 +149,27 @@ class BorrowPage(tk.Frame):
                 self.status_label.config(text=f"✓ {success_msg}", fg=self.controller.SUCCESS_COLOR)
                 self.controller.set_status(success_msg, color=self.controller.SUCCESS_COLOR)
                 self.book_id_entry.delete(0, tk.END)
-                
-                # 3秒后清除成功消息
                 self.after(3000, lambda: self.status_label.config(text=""))
-                
             elif result == "overdue":
                 error_msg = "有超期图书未归还，无法借书"
                 self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)
                 self.controller.set_status(error_msg, color=self.controller.DANGER_COLOR)
-                
             elif result == "limit_reached":
-                error_msg = "借书失败：已达到最大借阅数量"
+                error_msg = "借书失败：已达到最大借阅数量（2本）"
                 self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)
                 self.controller.set_status(error_msg, color=self.controller.DANGER_COLOR)
-                
-            else:
+            elif result == "not_found":
+                error_msg = "借书失败：图书不存在"
+                self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)
+                self.controller.set_status(error_msg, color=self.controller.DANGER_COLOR)
+            elif result == "not_available":
                 error_msg = "借书失败：图书可能已借出"
                 self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)
                 self.controller.set_status(error_msg, color=self.controller.DANGER_COLOR)
-                
+            else:
+                error_msg = "借书失败：未知原因"
+                self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)
+                self.controller.set_status(error_msg, color=self.controller.DANGER_COLOR)
         except Exception as e:
             error_msg = f"系统错误：{str(e)}"
             self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)

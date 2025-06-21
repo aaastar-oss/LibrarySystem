@@ -9,9 +9,9 @@ class QueryBookPage(tk.Frame):
         self.create_widgets()
 
     def create_widgets(self):
-        # 主卡片容器 - 添加阴影和更好的边距
+        # 主卡片容器
         card = tk.Frame(
-            self, 
+            self,
             bg=self.controller.CARD_BG,
             bd=0,
             highlightthickness=0,
@@ -20,185 +20,199 @@ class QueryBookPage(tk.Frame):
             pady=30
         )
         card.pack(fill="both", expand=True, padx=40, pady=40)
-        
-        # 标题区域 - 更突出的设计
+
+        # 标题区域
         title_frame = tk.Frame(card, bg=self.controller.CARD_BG)
         title_frame.pack(fill="x", pady=(0, 20))
-        
+
         tk.Label(
             title_frame,
-            text="🔍 查询图书信息",
+            text="图书查询",
             font=("Microsoft YaHei", 18, "bold"),
-            fg="#333333",
+            fg=self.controller.TEXT_DARK,
             bg=self.controller.CARD_BG
         ).pack(side="left")
-        
+
         # 添加装饰性分隔线
-        separator = tk.Frame(card, height=2, bg="#e0e3e6")
+        separator = tk.Frame(card, height=2, bg=self.controller.BORDER_COLOR if hasattr(self.controller, "BORDER_COLOR") else "#e0e3e6")
         separator.pack(fill="x", pady=(0, 25))
 
-        # 查询输入区域
-        input_frame = tk.Frame(card, bg=self.controller.CARD_BG)
-        input_frame.pack(fill="x", pady=15, padx=40)
-        
-        # 查询条件标签
-        tk.Label(
-            input_frame,
-            text="查询条件：",
-            font=("Microsoft YaHei", 12),
-            fg="#555555",
-            bg=self.controller.CARD_BG,
-            width=8,
-            anchor="e"
-        ).grid(row=0, column=0, padx=8, pady=10, sticky='e')
-        
-        # 查询输入框 - 更现代的外观
+        # 搜索框区域
+        search_frame = tk.Frame(card, bg=self.controller.CARD_BG)
+        search_frame.pack(fill="x", pady=(0, 15))
+
+        # 搜索输入框
         self.entry = tk.Entry(
-            input_frame,
+            search_frame,
             font=("Microsoft YaHei", 12),
             bg="white",
             fg="#333333",
             relief="flat",
             bd=1,
-            highlightbackground="#d1d3e2",
+            highlightbackground=self.controller.BORDER_COLOR if hasattr(self.controller, "BORDER_COLOR") else "#d1d3e2",
             highlightthickness=1,
             highlightcolor=self.controller.PRIMARY_COLOR,
             insertbackground=self.controller.PRIMARY_COLOR
         )
-        self.entry.grid(row=0, column=1, padx=8, pady=10, ipady=6, sticky='ew')
-        
-        # 添加输入框悬停效果
-        self.entry.bind("<Enter>", lambda e: self.entry.config(highlightbackground=self.controller.PRIMARY_COLOR))
-        self.entry.bind("<Leave>", lambda e: self.entry.config(highlightbackground="#d1d3e2"))
+        self.entry.pack(side="left", fill="x", expand=True, ipady=6)
 
-        # 查询按钮 - 更精致的样式
-        query_btn = tk.Button(
-            input_frame,
+        # 搜索按钮
+        search_btn = tk.Button(
+            search_frame,
             text="查询",
+            command=self.search_book,
             font=("Microsoft YaHei", 12),
             bg=self.controller.PRIMARY_COLOR,
             fg="white",
             activebackground="#3a56b0",
             activeforeground="white",
             relief="flat",
-            bd=0,
             cursor="hand2",
-            command=self.do_query,
             padx=20,
             pady=5
         )
-        query_btn.grid(row=0, column=2, padx=(15, 0), pady=10, ipady=2)
-        query_btn.bind("<Enter>", lambda e: query_btn.config(bg="#3a56b0"))
-        query_btn.bind("<Leave>", lambda e: query_btn.config(bg=self.controller.PRIMARY_COLOR))
+        search_btn.pack(side="right", padx=(10, 0))
 
-        # 表格容器
-        table_frame = tk.Frame(card, bg=self.controller.CARD_BG)
-        table_frame.pack(fill="both", expand=True, padx=40, pady=(0, 20))
+        # 按钮悬停效果
+        search_btn.bind("<Enter>", lambda e: search_btn.config(bg="#3a56b0"))
+        search_btn.bind("<Leave>", lambda e: search_btn.config(bg=self.controller.PRIMARY_COLOR))
 
-        # 创建Treeview表格 - 更现代化的样式
-        style = ttk.Style()
-        style.theme_use("default")
-        
-        # 配置表格样式
-        style.configure("Treeview",
-                      background="white",
-                      foreground="#333333",
-                      fieldbackground="white",
-                      font=("Microsoft YaHei", 11),
-                      rowheight=30,
-                      borderwidth=0)
-        
-        style.configure("Treeview.Heading",
-                       font=("Microsoft YaHei", 12, "bold"),
-                       background="#f8f9fa",
-                       foreground="#333333",
-                       padding=(10, 5),
-                       borderwidth=0)
-        
-        style.map("Treeview", 
-                 background=[("selected", self.controller.PRIMARY_COLOR)],
-                 foreground=[("selected", "white")])
+        # 结果展示区域
+        result_frame = tk.Frame(card, bg=self.controller.CARD_BG)
+        result_frame.pack(fill="both", expand=True)
 
-        # 创建详情表格
+        # 使用Treeview展示结果
         self.tree = ttk.Treeview(
-            table_frame,
-            columns=("property", "value"),
+            result_frame,
+            columns=("编号", "书名", "作者", "出版社", "价格", "剩余"),
             show="headings",
-            height=8,
-            selectmode="none"
+            height=10
         )
 
         # 配置列
-        self.tree.column("property", width=120, anchor="e", stretch=False)
-        self.tree.column("value", width=300, anchor="w", stretch=True)
-        self.tree.heading("property", text="属性")
-        self.tree.heading("value", text="值")
+        columns = {
+            "编号": {"width": 80, "anchor": "center"},
+            "书名": {"width": 150, "anchor": "w"},
+            "作者": {"width": 100, "anchor": "w"},
+            "出版社": {"width": 120, "anchor": "w"},
+            "价格": {"width": 80, "anchor": "e"},
+            "剩余": {"width": 60, "anchor": "center"}
+        }
 
-        # 滚动条
-        vsb = ttk.Scrollbar(
-            table_frame, 
-            orient="vertical", 
-            command=self.tree.yview,
-            style="Vertical.TScrollbar"
-        )
-        self.tree.configure(yscrollcommand=vsb.set)
+        for col, config in columns.items():
+            self.tree.heading(col, text=col)
+            self.tree.column(col, **config)
 
-        # 布局
-        self.tree.pack(side="left", fill="both", expand=True)
-        vsb.pack(side="right", fill="y")
+        # 添加滚动条
+        scroll_y = ttk.Scrollbar(result_frame, orient="vertical", command=self.tree.yview)
+        scroll_y.pack(side="right", fill="y")
+        self.tree.configure(yscrollcommand=scroll_y.set)
 
-        # 添加条纹行效果
-        self.tree.tag_configure("oddrow", background="#f8f9fa")
-        self.tree.tag_configure("evenrow", background="white")
+        scroll_x = ttk.Scrollbar(result_frame, orient="horizontal", command=self.tree.xview)
+        scroll_x.pack(side="bottom", fill="x")
+        self.tree.configure(xscrollcommand=scroll_x.set)
 
-        # 状态标签 - 更醒目的样式
-        self.status = tk.Label(
+        self.tree.pack(fill="both", expand=True)
+
+        # 状态标签
+        self.status_label = tk.Label(
             card,
             text="",
             font=("Microsoft YaHei", 11),
-            fg="#F44336",
+            fg=self.controller.TEXT_LIGHT,
             bg=self.controller.CARD_BG,
-            wraplength=400
+            wraplength=500
         )
-        self.status.pack(pady=(10, 0))
+        self.status_label.pack(pady=(10, 0))
 
-    def do_query(self):
+        # 按钮区域
+        button_frame = tk.Frame(card, bg=self.controller.CARD_BG)
+        button_frame.pack(fill="x", pady=(15, 0))
+
+        # 返回按钮
+        back_btn = tk.Button(
+            button_frame,
+            text="返回菜单",
+            command=lambda: self.controller.show_frame("MenuPage"),
+            font=("Microsoft YaHei", 11),
+            bg=self.controller.SECONDARY_COLOR,
+            fg="white",
+            activebackground="#5a6268",
+            activeforeground="white",
+            relief="flat",
+            cursor="hand2",
+            padx=15,
+            pady=5
+        )
+        back_btn.pack(side="right")
+
+        # 按钮悬停效果
+        back_btn.bind("<Enter>", lambda e: back_btn.config(bg="#5a6268"))
+        back_btn.bind("<Leave>", lambda e: back_btn.config(bg=self.controller.SECONDARY_COLOR))
+
+        # 绑定回车键
+        self.entry.bind("<Return>", lambda e: self.search_book())
+
+        # 自动聚焦输入框
+        self.entry.focus_set()
+
+    def search_book(self):
+        """执行图书查询（模糊搜索，列表展示）"""
         keyword = self.entry.get().strip()
-        for item in self.tree.get_children():
-            self.tree.delete(item)
-        
+
+        # 清除现有数据
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+
+        # 输入验证
         if not keyword:
-            self.status.config(text="✖ 请输入查询条件", fg="#F44336")
-            self.controller.set_status("查询失败：请输入查询条件")
+            self.status_label.config(
+                text="请输入图书编号或书名",
+                fg=self.controller.DANGER_COLOR
+            )
+            self.controller.set_status("查询失败：未输入关键词", color=self.controller.DANGER_COLOR)
             return
 
-        result_list = admin_service.query_book(keyword)
-        if not result_list:
-            self.status.config(text="✖ 未找到匹配图书", fg="#F44336")
-            self.controller.set_status("查询失败：未找到匹配图书")
-            return
+        try:
+            # 调用服务层
+            books = admin_service.query_book(keyword)
+            if books:
+                for book in books:
+                    self.tree.insert("", tk.END, values=(
+                        book.get("id", ""),
+                        book.get("title", ""),
+                        book.get("author", ""),
+                        book.get("publisher", ""),
+                        f"￥{book.get('price', 0):.2f}",
+                        book.get("available_copies", 0)
+                    ))
 
-        result = result_list[0]  # 取第一个结果
-        properties = [
-            ("编号", result.get('id', '')),
-            ("书名", result.get('title', '')),
-            ("作者", result.get('author', '')),
-            ("出版社", result.get('publisher', '')),
-            ("出版日期", str(result.get('publish_date', ''))),
-            ("价格", f"{float(result.get('price', 0)):.2f}元"),
-            ("总库存", str(result.get('total_copies', 0))),
-            ("可借数量", str(result.get('available_copies', 0)))
-        ]
-        
-        for i, (prop, value) in enumerate(properties):
-            tags = ("evenrow",) if i % 2 == 0 else ("oddrow",)
-            self.tree.insert("", "end", values=(prop, value), tags=tags)
-        
-        self.status.config(text="✔ 查询成功", fg="#4CAF50")
-        self.controller.set_status(f"查询图书成功", color="#4CAF50")
+                status_msg = f"找到 {len(books)} 条匹配结果"
+                self.status_label.config(
+                    text=status_msg,
+                    fg=self.controller.SUCCESS_COLOR
+                )
+                self.controller.set_status(status_msg, color=self.controller.SUCCESS_COLOR)
+            else:
+                status_msg = "未找到匹配的图书"
+                self.status_label.config(
+                    text=status_msg,
+                    fg=self.controller.TEXT_LIGHT
+                )
+                self.controller.set_status(status_msg, color=self.controller.TEXT_LIGHT)
+
+        except Exception as e:
+            error_msg = f"查询图书信息出错：{str(e)}"
+            self.status_label.config(
+                text=error_msg,
+                fg=self.controller.DANGER_COLOR
+            )
+            self.controller.set_status(error_msg, color=self.controller.DANGER_COLOR)
+            import traceback
+            print(f"详细错误：{traceback.format_exc()}")
 
     def update_data(self):
         self.entry.delete(0, tk.END)
         for item in self.tree.get_children():
             self.tree.delete(item)
-        self.status.config(text="")
+        self.status_label.config(text="")

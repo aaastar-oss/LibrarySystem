@@ -37,24 +37,24 @@ class MenuPage(tk.Frame):
             bd=1,
             relief="solid",
             highlightthickness=0,
-            padx=20,
-            pady=20
+            padx=10,
+            pady=10
         )
-        self.info_card.pack(fill="x")
+        self.info_card.pack(fill="x", padx=10, pady=10)
         
-        # 刷新按钮
+        # 刷新按钮（居中）
         self.refresh_btn = tk.Button(
             self.card,
             text="刷新信息",
             command=self.update_data,
-            font=("Microsoft YaHei", 10),
+            font=("Microsoft YaHei", 11),
             bg=controller.PRIMARY_COLOR,
             fg="white",
             relief="flat",
-            padx=15,
+            padx=20,
             pady=5
         )
-        self.refresh_btn.pack(pady=10)
+        self.refresh_btn.pack(pady=20)
         
         # 初始加载用户信息
         self._load_user_info()
@@ -94,39 +94,45 @@ class MenuPage(tk.Frame):
         for widget in self.info_card.winfo_children():
             widget.destroy()
         
-        # 用户信息项配置
+        # 信息项及图标
         info_items = [
-            ("👤 用户名", user_info.get('username', 'N/A')),
-            ("🔑 角色", user_info.get('role', '未知').capitalize()),
-            ("📱 电话", user_info.get('phone', '未设置')),
-            ("✉️ 邮箱", user_info.get('email', '未设置')),
-            ("📚 借阅状态", f"{user_info.get('current_borrowed', 0)}/{user_info.get('max_borrow', 5)}"),
-            ("⏳ 注册时间", user_info.get('register_time', '未知'))
+            ("👤", "用户名", user_info.get('username', 'N/A')),
+            ("🔑", "角色", user_info.get('role', '未知').capitalize()),
+            ("📱", "电话", user_info.get('phone', '未设置')),
+            ("✉️", "邮箱", user_info.get('email', '未设置')),
+            ("📚", "借阅状态", f"{user_info.get('current_borrowed', 0)}/{2}"),
+            ("⏳", "注册时间", user_info.get('register_time', '未知'))
         ]
         
-        # 创建信息显示行
-        for label, value in info_items:
-            row_frame = tk.Frame(self.info_card, bg="#f8f9fa")
-            row_frame.pack(fill="x", pady=5)
-            
+        for icon, label, value in info_items:
+            row = tk.Frame(self.info_card, bg="#f8f9fa")
+            row.pack(fill="x", pady=6, anchor="w")
             tk.Label(
-                row_frame,
-                text=label,
-                font=("Microsoft YaHei", 11, "bold"),
-                fg="#333333",
+                row,
+                text=icon,
+                font=("Microsoft YaHei", 13),
+                fg="#444",
                 bg="#f8f9fa",
-                width=10,
+                width=2,
                 anchor="w"
             ).pack(side="left")
-            
             tk.Label(
-                row_frame,
+                row,
+                text=label,
+                font=("Microsoft YaHei", 12, "bold"),
+                fg="#222",
+                bg="#f8f9fa",
+                width=8,
+                anchor="w"
+            ).pack(side="left")
+            tk.Label(
+                row,
                 text=value,
-                font=("Microsoft YaHei", 11),
-                fg="#555555",
+                font=("Microsoft YaHei", 12),
+                fg="#555",
                 bg="#f8f9fa",
                 anchor="w"
-            ).pack(side="left", padx=10)
+            ).pack(side="left", padx=8)
         
         print("[MenuPage] 用户信息显示完成")
         

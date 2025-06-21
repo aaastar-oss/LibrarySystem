@@ -145,19 +145,24 @@ class ReturnPage(tk.Frame):
             # 调用服务层
             success = user_service.return_book(username, book_id)
             
-            if success:
+            if success is True:
                 success_msg = "还书成功"
                 self.status_label.config(text=f"✓ {success_msg}", fg=self.controller.SUCCESS_COLOR)
                 self.controller.set_status(success_msg, color=self.controller.SUCCESS_COLOR)
                 self.book_id_entry.delete(0, tk.END)
-                
-                # 3秒后清除成功消息
                 self.after(3000, lambda: self.status_label.config(text=""))
-            else:
-                error_msg = "还书失败：可能未借该书"
+            elif success == "not_borrowed":
+                error_msg = "还书失败：未借该书或已归还"
                 self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)
                 self.controller.set_status(error_msg, color=self.controller.DANGER_COLOR)
-                
+            elif success == "not_found":
+                error_msg = "还书失败：图书不存在"
+                self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)
+                self.controller.set_status(error_msg, color=self.controller.DANGER_COLOR)
+            else:
+                error_msg = "还书失败：未知原因"
+                self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)
+                self.controller.set_status(error_msg, color=self.controller.DANGER_COLOR)
         except Exception as e:
             error_msg = f"系统错误：{str(e)}"
             self.status_label.config(text=f"✗ {error_msg}", fg=self.controller.DANGER_COLOR)

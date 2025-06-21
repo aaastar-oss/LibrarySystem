@@ -35,35 +35,52 @@ def has_overdue_books(username: str) -> bool:
         print(traceback.format_exc())
         return False
 
-def borrow_book(username: str, book_id: str) -> bool:
+def borrow_book(username: str, book_id: str):
     print(f"[borrow_book] 用户 {username} 尝试借书 {book_id}")
     try:
         if database_user.check_user_overdue(username):
             print("[borrow_book] 有超期图书，拒绝借阅")
-            return False
+            return "overdue"
         if not database_user.book_exists(book_id):
             print("[borrow_book] 图书不存在")
-            return False
+            return "not_found"
         if not database_user.is_book_available(book_id):
             print("[borrow_book] 副本不足")
-            return False
-        if database_user.user_borrow_count(username) >= 5:
+            return "not_available"
+        if database_user.user_borrow_count(username) >= 2:
             print("[borrow_book] 已借书达上限")
-            return False
+            return "limit_reached"
         result = database_user.insert_borrow_record(username, book_id)
         print(f"[borrow_book] 借阅操作结果：{result}")
-        return result
+        return True if result else False
     except Exception as e:
         print(f"[borrow_book] 异常：{e}")
         print(traceback.format_exc())
         return False
 
-def return_book(username: str, book_id: str) -> bool:
+def return_book(username: str, book_id: str):
     print(f"[return_book] 用户 {username} 尝试归还图书 {book_id}")
     try:
+        # 检查图书是否存在
+        if not database_user.book_exists(book_id):
+            print("[return_book] 图书不存在")
+            return "not_found"
+        # 检查是否有未归还的借阅记录
+        db = database_user.get_connection()
+        user = db.users.find_one({"username": username})
+        if not user:
+            return "not_borrowed"
+        record = db.borrowrecords.find_one({
+            "user_id": str(user["_id"]),
+            "book_id": str(book_id),
+            "return_date": None
+        })
+        if not record:
+            print("[return_book] 未借该书或已归还")
+            return "not_borrowed"
         result = database_user.return_book_record(username, book_id)
         print(f"[return_book] 归还操作结果：{result}")
-        return result
+        return True if result else False
     except Exception as e:
         print(f"[return_book] 异常：{e}")
         print(traceback.format_exc())
